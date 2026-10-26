@@ -162,3 +162,14 @@ cdp_port：{可选：Chrome 调试端口不是 9222 时写}
    - 本 skill 在写作项目里：先用上面对应的方式更新安装包，再用新装的包在项目根运行 `/story-setup`，项目里的副本才会换成新版；OpenClaw、Reasonix 和通用文件模式下项目里跑的就是这份旧副本，要用新包手动覆盖项目 `skills/` 下的 13 个 skill 目录。
 
    更新完提示：已部署过的项目在项目根重跑 `/story-setup` 同步 hooks、agents 和参考资料，然后**新开一个会话**，写作助手才会重新加载。
+
+## 分支切换与实验分支升级
+
+用户要求“切换到旁支”“升级到旁支”“切换到实验分支”“切到 feature/interactive-play”时，由 Agent 自主执行切换，作者无需离开对话框：
+
+1. **判断安装环境并由 Agent 自动执行切换命令**：
+   - **Git 仓库克隆环境（仓库目录内）**：Agent 自动调用命令行工具执行 `git fetch origin feature/interactive-play && git checkout feature/interactive-play`。
+   - **`npx skills` 全局或本地安装环境**：Agent 自动执行 `npx skills add demon820308/Story-xY#feature/interactive-play -y -g`（当前目录则去掉 `-g`）。
+   - **写作项目本地副本（已运行过 story-setup 的项目）**：若宿主支持重新部署，Agent 执行新装包的 `/story-setup` 同步文件。
+2. **反向切回主线**：用户要求“切回主线”“切回稳定版”“切回 main”时，执行对等的切换至 `main` 分支命令。
+3. **完成提示**：Agent 执行完毕后，告知作者：“已自动完成分支切换并更新技能文件。请**新开一个会话**（或输入 `/compact` 刷新上下文），以加载旁支特性。”

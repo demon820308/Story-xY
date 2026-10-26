@@ -13,7 +13,7 @@
   &nbsp;·&nbsp;
   <a href="#核心叙事工程资产"><b>核心技法</b></a>
   &nbsp;·&nbsp;
-  <a href="#实验性旁支-interactive-play"><b>实验性旁支</b></a>
+  <a href="#互动叙事与分支演算dm-模式"><b>互动推演(DM模式)</b></a>
   &nbsp;·&nbsp;
   <a href="#常见问题"><b>常见问题</b></a>
   &nbsp;·&nbsp;
@@ -222,45 +222,31 @@ flowchart LR
 
 ---
 
-## 实验性旁支：interactive-play（互动叙事与分支演算）
+## 互动叙事与分支演算（DM 模式）
 
 <p align="center">
   <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square"></a>
-  <a href="https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md"><img alt="Spec Document" src="https://img.shields.io/badge/Architecture-interactive--play--engine.md-1F6FEB?style=flat-square"></a>
+  <a href="./docs/experimental/interactive-play-engine.md"><img alt="Spec Document" src="https://img.shields.io/badge/Architecture-interactive--play--engine.md-1F6FEB?style=flat-square"></a>
 </p>
 
-除了主线的纯 Skill 连载小说创作套件之外，仓库维护了一个独立的实验性旁支 [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play)。该分支旨在探索将**交互式分支小说（CYOA / 互动剧本 / 探索式文字冒险）与状态机演进（Play Engine）**深度整合进写作体系。
+Story-xY 不仅支持单向连载网文创作，还内置了**交互式分支叙事（CYOA / 互动剧本 / TRPG 文字冒险）与状态机推演引擎**。在此模式下，Agent 不再是被动码字工具，而是化身为 **叙事裁判（Dungeon Master / DM）**，根据玩家行动实时裁决物理因果、管理线索状态并展开多结局分支。
 
-### 1. 核心理念：从单向写作到动态推演
+### 1. 主分支（main）直接开启 DM 模式（无需切分支）
 
-- **单向连载（主线 `main`）**：确定性的单条因果链，按“大纲 → 场景分镜与预算 → 伏笔暗线 → 正文草拟 → 去AI味”闭环推进。
-- **互动演算（旁支 `feature/interactive-play`）**：单场景提供 2~4 个互斥行动意图（`PlayActionIntent`）。Agent 不再只扮演被动码字工具，而是充当 **DM / 叙事裁判（Narrative Arbiter）**，根据玩家抉择、动机与物理物证实时演算下一场景的因果分支。
+**无需切换分支，也无需重新安装**。主分支已内置规范文档 [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md)。直接复制以下指令发送给 Agent，即可立即开启互动推演：
 
-### 2. 怎么安装与切换
+```text
+开启互动叙事裁判（DM）模式。请基于 Story-xY 的去AI味和场景预算规范，以及 docs/experimental/interactive-play-engine.md 的状态机规则：
+1. 设定当前故事起点（或以我提供的大纲/设定为准）。
+2. 每次描写一个场景镜头（800~1200 字，纯正文，拒绝 AI 味与空洞抒情）。
+3. 场景末尾呈现【行动面板（Choice Panel）】，输出 2~4 个互斥选项，标明 [动作意图]、[风险度] 与 [潜在代价/收益]。
+4. 停下来等待我的选择；收到我的输入后，作为 DM 裁决因果、更新伏笔与线索库，推进下一个场景。
 
-- **方式一（本地仓库直接切换）**：
-  ```bash
-  cd E:\story-xy
-  git checkout feature/interactive-play
-  ```
-- **方式二（npm/skills 命令行全局安装指定分支）**：
-  ```bash
-  npx skills add demon820308/Story-xY#feature/interactive-play -y -g
-  ```
-- **方式三（直接在 Agent 对话中安装）**：
-  在支持 Git 仓库加载的 Agent 对话框中输入：
-  ```text
-  安装这个分支的技能：https://github.com/demon820308/Story-xY/tree/feature/interactive-play
-  ```
+现在开始第 1 个场景。
+```
 
-### 3. Agent 内的使用姿势与交互流程
+### 2. 交互推演流程与体验
 
-在切换到该分支后，所有 13 个常规 Skill 依然 100% 可用。你可以直接对 Agent 下达互动推演指令：
-
-#### 触发提示词示例
-> “参考 `docs/experimental/interactive-play-engine.md` 的规范，把这段剧情设计成**互动剧本**：每次输出 1 个场景正文并附带 2~4 个玩家行动意图选项（PlayActionIntent），要求包含动作意图、风险评估与执行风格。”
-
-#### 交互推演体验
 1. **Agent 渲染场景与行动面板（Choice Panel）**：
    - **场景正文**：严格遵照篇幅预算（800~1500 字）与去AI味标准描写当下的局势与感官冲突。
    - **行动面板**：
@@ -272,14 +258,28 @@ flowchart LR
 3. **状态机（PlayReducer）结算推进**：
    - Agent 根据单一真相库、世界观规则与角色好感度进行判定，自动更新伏笔状态、物证链与次级代价，推演进入下一场景分支。
 
-### 4. 实验性技术资产
+### 3. 如何升级（无需重新安装）
 
-| 资产文件 / 概念 | 说明 |
-|:---|:---|
-| [`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md) | 互动剧本状态机、实体分类与意图解析架构设计文档 |
-| `PlayActionIntent` | 结构化动作意图定义（行动类型、目标实体、风险度、多义性与次级动作） |
-| `PlayEntityType` | 实体分类体系（角色、地点、道具、线索、证据链、世界观规则） |
-| `PlayReducer` | 状态演算契约：保证多分支推演不推翻全局底层真相库 |
+已有用户无需卸载重装，按你的使用方式一键增量更新：
+
+- **本地 Git 仓库（Antigravity / Codex / Pi / Cursor）**：
+  ```bash
+  cd E:\story-xy
+  git pull
+  ```
+- **命令行全局安装（npx skills）**：
+  ```bash
+  npx skills add demon820308/Story-xY -y -g
+  ```
+- **已有写作项目**：
+  在项目根目录运行 `/story-setup`，自动无损同步最新的参考资料与宿主配置。
+
+### 4. 独立实验分支：feature/interactive-play
+
+如果你希望在一个完全隔离的分支中做深度二次开发或探索纯粹的游戏化叙事原型，本仓库同步维护了 [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play) 旁支：
+- **切换到旁支**：`git checkout feature/interactive-play`
+- **命令行安装旁支**：`npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
+- **核心技术资产**：详见 [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md)。
 
 ---
 
