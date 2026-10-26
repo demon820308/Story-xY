@@ -4,6 +4,10 @@
 .agents/*
 !.agents/skills
 !.agents/notes
+!.agents/agents
+!.agents/rules
+!.agents/hooks
+!.agents/hooks.json
 .codebuddy/
 .codewhale/
 node_modules/
