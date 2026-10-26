@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://zenstory.ai/brand/zenstory-ai-mark.svg" alt="" width="76" height="76">
-</p>
-
 <h1 align="center">Story-xY</h1>
 
 <p align="center">
@@ -9,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://zenstory.ai/zh/oh-story"><b>项目主页</b></a>
+  <a href="https://github.com/demon820308/Story-xY"><b>GitHub 仓库</b></a>
   &nbsp;·&nbsp;
   <a href="#安装"><b>安装</b></a>
   &nbsp;·&nbsp;
@@ -112,7 +108,7 @@ Story-xY 将业内工业化写作框架经过干净室（Clean-Room）白手重�
 ### 方式一：命令行一键安装（推荐）
 
 ```bash
-npx skills add zenstory-ai/oh-story-claudecode -y -g
+npx skills add demon820308/Story-xY -y -g
 ```
 
 `-g` 为全局安装，所有目录可用。更新时重复执行该命令即可。
@@ -121,7 +117,7 @@ npx skills add zenstory-ai/oh-story-claudecode -y -g
 
 在支持直接加载 Git 仓库的 Agent 中输入：
 ```
-安装这个 skill https://github.com/zenstory-ai/oh-story-claudecode
+安装这个 skill https://github.com/demon820308/Story-xY
 ```
 
 ### 首次使用建议

@@ -1,6 +1,6 @@
 # Claude Code skills that are not for coding: a fiction-writing skill pack as the worked example
 
-Agent skills can organize non-coding work. Oh Story (`zenstory-ai/oh-story-claudecode`) is an MIT-licensed set of 13 skills that turns Claude Code, Codex CLI, OpenCode, Google Antigravity, OpenClaw, ZCode and Reasonix into a full workflow for writing serialized fiction: scan bestseller charts, deconstruct top-ranked books, draft chapters with file-based continuity tracking, strip AI-flavored prose, generate covers. No code is written by the user; the agent reads and writes Markdown files in a book project.
+Agent skills can organize non-coding work. Oh Story (`demon820308/Story-xY`) is an MIT-licensed set of 13 skills that turns Claude Code, Codex CLI, OpenCode, Google Antigravity, OpenClaw, ZCode and Reasonix into a full workflow for writing serialized fiction: scan bestseller charts, deconstruct top-ranked books, draft chapters with file-based continuity tracking, strip AI-flavored prose, generate covers. No code is written by the user; the agent reads and writes Markdown files in a book project.
 
 ## What a skill is, in one paragraph
 
@@ -34,7 +34,7 @@ The parts that make it more than a prompt collection:
 ## How a writer uses it
 
 ```bash
-npx skills add zenstory-ai/oh-story-claudecode -y -g
+npx skills add demon820308/Story-xY -y -g
 ```
 
 Then, inside the agent, in an empty folder for the book:
@@ -53,7 +53,7 @@ Fiction uses the same machinery for a different kind of state. The state is larg
 
 ## Related
 
-- Repository: https://github.com/zenstory-ai/oh-story-claudecode (formerly `worldwonderer/oh-story-claudecode`; old links redirect)
+- Repository: https://github.com/demon820308/Story-xY (formerly `worldwonderer/oh-story-claudecode`; old links redirect)
 - English README: [README_EN.md](../README_EN.md)
 - Site guide for first-time users: https://zenstory.ai/oh-story/agent-skills-for-writers
 - Install to first chapter in Claude Code or Codex, step by step: https://zenstory.ai/oh-story/claude-code-novel-writing

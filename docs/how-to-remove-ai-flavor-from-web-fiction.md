@@ -1,6 +1,6 @@
 # AI 写的小说 AI 味太重怎么办：去AI味的具体做法
 
-去 AI 味要看句子怎样组织、笔墨花在哪里，以及人物的行动是否有依据。Oh Story（`zenstory-ai/oh-story-claudecode`，开源 MIT）的 `/story-deslop`（`/去AI味`）默认完整检查这三层，再按作者授权改稿。可以单独使用，也可以承接长短篇写作流程中的定点修改。
+去 AI 味要看句子怎样组织、笔墨花在哪里，以及人物的行动是否有依据。Oh Story（`demon820308/Story-xY`，开源 MIT）的 `/story-deslop`（`/去AI味`）默认完整检查这三层，再按作者授权改稿。可以单独使用，也可以承接长短篇写作流程中的定点修改。
 
 处理前先读当前要求与本书文风。安静场景、短促台词、心理直写和叙述者评论，都要放回具体语境判断。
 
@@ -52,4 +52,4 @@ node scripts/check-ai-patterns.js --check --fail-on=blocking <正文文件绝对
 - 触发：`/story-deslop`、`/去AI味`，或直接说“这篇太 AI 了”。
 - 长短篇写作与审稿使用同源的表达、用笔和故事方法；章末定点修改与独立完整诊断各按本次范围执行。
 - 站点上的改稿示例（前后对照）：https://zenstory.ai/zh/oh-story/revise-ai-prose
-- 仓库地址：https://github.com/zenstory-ai/oh-story-claudecode（原 `worldwonderer/oh-story-claudecode`，旧链接自动跳转）
+- 仓库地址：https://github.com/demon820308/Story-xY（原 `worldwonderer/oh-story-claudecode`，旧链接自动跳转）

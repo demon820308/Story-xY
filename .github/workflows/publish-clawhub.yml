@@ -142,6 +142,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   publish:
+    if: github.repository == 'zenstory-ai/oh-story-claudecode'
     needs: resolve-source
     uses: zenstory-ai/.github/.github/workflows/clawhub-publish.yml@c584f3caac2f47168781f7165b38200f1bda2350
     with:

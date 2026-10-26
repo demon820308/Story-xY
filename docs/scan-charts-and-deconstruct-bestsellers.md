@@ -1,6 +1,6 @@
 # 怎么拆解榜单爆款小说、学它的结构：扫榜和拆文的自动化做法
 
-先扫榜，再拆文。扫榜看跨样本重复模式；拆文先保留黄金三章，再以连续章节块一次生成逐章事实、跨章因果、双时间线和三维节奏，聚合成“节奏”和“情绪模块”两份可复用资产，最后生成带原文锚点的文风。Oh Story（`zenstory-ai/oh-story-claudecode`，开源 MIT）把这条线做成三个 skill：`/story-long-scan` → `/story-long-analyze` → `/story-long-write`。短篇有对应的 `short-scan` / `short-analyze` / `short-write`。
+先扫榜，再拆文。扫榜看跨样本重复模式；拆文先保留黄金三章，再以连续章节块一次生成逐章事实、跨章因果、双时间线和三维节奏，聚合成“节奏”和“情绪模块”两份可复用资产，最后生成带原文锚点的文风。Oh Story（`demon820308/Story-xY`，开源 MIT）把这条线做成三个 skill：`/story-long-scan` → `/story-long-analyze` → `/story-long-write`。短篇有对应的 `short-scan` / `short-analyze` / `short-write`。
 
 拆文以用户有权处理的文本为输入，保留可追溯的原文锚点，并将分析结果写入拆文库；输入文本不因分析而改写。
 
@@ -74,4 +74,4 @@ Stage 6 可以单独重建：优先用 `_style-sample.txt`；没有样本时，�
 - 触发：`/story-long-scan`、`/长篇扫榜`、"长篇什么火"；`/story-long-analyze`、`/长篇拆文`、"帮我拆这本书"。
 - 参考方法：`skills/story-long-analyze/references/stage3-plot-rhythm.md`（剧情与节奏聚合，含桥段词表）
 - 站点指南：[小说拆书怎么拆](https://zenstory.ai/zh/oh-story/learn-from-fiction)（从原文证据到自己的新场景）、[黄金三章怎么写](https://zenstory.ai/zh/oh-story/novel-opening)（开篇交付清单与自查表）
-- 仓库地址：https://github.com/zenstory-ai/oh-story-claudecode（原 `worldwonderer/oh-story-claudecode`，旧链接自动跳转）
+- 仓库地址：https://github.com/demon820308/Story-xY（原 `worldwonderer/oh-story-claudecode`，旧链接自动跳转）

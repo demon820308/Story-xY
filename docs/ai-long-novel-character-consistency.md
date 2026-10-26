@@ -1,6 +1,6 @@
 # AI 写长篇小说怎么不崩人设：Oh Story 的做法
 
-把已发生的故事状态保存在文件中，每章只读取相关信息。Oh Story（`zenstory-ai/oh-story-claudecode`，开源 MIT，13 个 Claude Code / Codex / OpenCode 等编程 Agent 的写作 skill）把每部长篇拆成 `设定/`、`大纲/`、`正文/`、`追踪/` 四类文件；每写一章，只读取"不知道就会写错"的那一小部分状态，写完后由脚本把变化写回追踪文件。对话只负责创作，不负责记忆。
+把已发生的故事状态保存在文件中，每章只读取相关信息。Oh Story（`demon820308/Story-xY`，开源 MIT，13 个 Claude Code / Codex / OpenCode 等编程 Agent 的写作 skill）把每部长篇拆成 `设定/`、`大纲/`、`正文/`、`追踪/` 四类文件；每写一章，只读取"不知道就会写错"的那一小部分状态，写完后由脚本把变化写回追踪文件。对话只负责创作，不负责记忆。
 
 当前技能用结构化追踪减少人设漂移、伏笔断线和角色提前获知信息的问题。
 
@@ -60,8 +60,8 @@ English version: [Keep an AI-written novel consistent over 100+ chapters](keep-a
 
 ## 相关
 
-- 安装：`npx skills add zenstory-ai/oh-story-claudecode -y -g`，然后在 Agent 里运行 `/story-setup`。
+- 安装：`npx skills add demon820308/Story-xY -y -g`，然后在 Agent 里运行 `/story-setup`。
 - 站点指南（含三章示例）：https://zenstory.ai/zh/oh-story/long-novel-continuity
 - 细纲模板（每章要改变什么、哪些信息先不给）：https://zenstory.ai/zh/oh-story/chapter-outline-template
 - 追踪实现：`skills/story-long-write/references/tracking-transaction.md`
-- 仓库地址：https://github.com/zenstory-ai/oh-story-claudecode（原 `worldwonderer/oh-story-claudecode`，旧链接自动跳转）
+- 仓库地址：https://github.com/demon820308/Story-xY（原 `worldwonderer/oh-story-claudecode`，旧链接自动跳转）

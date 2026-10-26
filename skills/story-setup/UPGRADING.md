@@ -11,7 +11,7 @@
 
 ## 升级步骤
 
-1. 更新技能包：命令行装的重跑 `npx skills add zenstory-ai/oh-story-claudecode -y -g`，插件市场或 Plugin Management 装的在面板里更新。
+1. 更新技能包：命令行装的重跑 `npx skills add demon820308/Story-xY -y -g`，插件市场或 Plugin Management 装的在面板里更新。
 2. 在写作项目根重跑 `/story-setup`（Codex 用 `$story-setup`）。
 3. 新开会话，让新的助手和 hook 生效；Codex 提示要信任 hook 时，在 `/hooks` 里信任一下。
 4. 正在写的长篇：确认每本书有 `追踪/_tracking-state.json`。没有就按下方「追踪模型迁移」重建，否则写下一章会被拦。
@@ -88,7 +88,7 @@ Claude Code / ZCode 市场改为单一 `oh-story` 插件，仍包含全部 13 �
    ```bash
    claude plugin marketplace update oh-story-skills
    # 仅在 catalog 尚不存在时：
-   claude plugin marketplace add https://github.com/zenstory-ai/oh-story-claudecode
+   claude plugin marketplace add https://github.com/demon820308/Story-xY
    ```
 
 4. 在原 scope 安装统一 bundle；多个 scope 分别安装：

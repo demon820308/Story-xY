@@ -1,9 +1,5 @@
 <!-- Last synced with README.md: 2026-10-26 -->
 
-<p align="center">
-  <img src="https://zenstory.ai/brand/zenstory-ai-mark.svg" alt="" width="76" height="76">
-</p>
-
 <h1 align="center">Story-xY</h1>
 
 <p align="center">
@@ -11,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://zenstory.ai/oh-story"><b>Project page</b></a>
+  <a href="https://github.com/demon820308/Story-xY"><b>GitHub Repository</b></a>
   &nbsp;·&nbsp;
   <a href="#installation"><b>Install</b></a>
   &nbsp;·&nbsp;

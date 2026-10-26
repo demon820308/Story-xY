@@ -2,7 +2,7 @@
 name: story-deslop
 version: 1.0.0
 description: "网文去AI味。从表达、叙事用笔、故事因果三层诊断并修复文本，保留作者文风与已定剧情。触发方式：/story-deslop、/去AI味、「去AI味」「这篇太AI了」「网文去AI味」。"
-metadata: {"openclaw":{"source":"https://github.com/zenstory-ai/oh-story-claudecode"}}
+metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 ---
 # story-deslop：网文去AI味
 

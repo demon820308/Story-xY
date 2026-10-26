@@ -19,6 +19,7 @@ concurrency:
 jobs:
   release:
     name: Source release
+    if: github.repository == 'zenstory-ai/oh-story-claudecode'
     permissions:
       contents: write
       actions: read

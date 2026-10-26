@@ -16,7 +16,7 @@ This standalone `npx skills` installation path does not use the Claude Code or Z
 The marketplace remains named `oh-story-skills`, but now contains one `oh-story` bundle. Claude Code discovers all 13 root Skills from that bundle:
 
 ```bash
-claude plugin marketplace add https://github.com/zenstory-ai/oh-story-claudecode
+claude plugin marketplace add https://github.com/demon820308/Story-xY
 claude plugin install oh-story@oh-story-skills
 ```
 
@@ -54,7 +54,7 @@ If your platform can read a GitHub repo or project files, have the agent read `s
 
 **OpenClaw / Reasonix / generic paths need manual cleanup of nested directories:** these three keep their skill copy inside the project's `skills/`, so re-running `/story-setup` executes that project-local copy and the automatic cleanup never reaches them. If the project contains `skills/story-setup/references/agent-references/agent-references/` (possibly nested several levels deep) or `skills/story-setup/skills/`, delete them by hand. To update the skill text itself, reinstall this project and overwrite the 13 skill directories under the project's `skills/` from the new package.
 
-After updating, if a project has already run `/story-setup`, re-run `/story-setup` from the project root to sync hooks / agents / references. Per-version changes are in [CHANGELOG.md](../CHANGELOG.md) and [Releases](https://github.com/zenstory-ai/oh-story-claudecode/releases).
+After updating, if a project has already run `/story-setup`, re-run `/story-setup` from the project root to sync hooks / agents / references. Per-version changes are in [CHANGELOG.md](../CHANGELOG.md) and [Releases](https://github.com/demon820308/Story-xY/releases).
 
 **Multi-agent collaboration needs setup + a fresh session:** the 7 specialist agents (story-architect, narrative-writer, consistency-checker, etc.) are written into `.claude/agents/` by `/story-setup`, `.codex/agents/*.toml` by `$story-setup`, or generated into `.agents/agents/agent-name/agent.md` (`agent-name` stands for the actual name) by Antigravity `story-setup`. Antigravity calls them with `invoke_subagent` and the matching `TypeName`; if custom subagents are unavailable, each skill reports a solo/direct fallback. Run `/story-review` in the fresh session: if the opening line 「这次怎么审的」 (how this review was done) lists several review perspectives (full or lean review), the agents are registered; if it says 「我一个人审」 (reviewed alone), you are still in the old session or the runtime does not expose them.
 

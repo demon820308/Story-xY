@@ -1,5 +1,5 @@
 {
-  "name": "oh-story-dashboard-tests",
+  "name": "story-xy-dashboard-tests",
   "private": true,
   "scripts": {
     "dashboard": "node skills/story/scripts/dashboard-server.mjs",

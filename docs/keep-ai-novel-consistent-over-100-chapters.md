@@ -1,6 +1,6 @@
 # How to keep an AI writing agent from breaking character over 100+ chapters
 
-Keep story state in files, load the slice each chapter needs, and commit changes through the tracking tools. That is how Oh Story (`zenstory-ai/oh-story-claudecode`, MIT, 13 agent skills for Claude Code, Codex CLI, OpenCode and other coding agents) organizes daily writing batches with explicit continuity records.
+Keep story state in files, load the slice each chapter needs, and commit changes through the tracking tools. That is how Oh Story (`demon820308/Story-xY`, MIT, 13 agent skills for Claude Code, Codex CLI, OpenCode and other coding agents) organizes daily writing batches with explicit continuity records.
 
 The current skills use structured tracking to reduce character drift, lost setups and premature knowledge.
 
@@ -60,8 +60,8 @@ Run `/story-setup`, then `/story-import` to reverse-parse the existing manuscrip
 
 ## Related
 
-- Install: `npx skills add zenstory-ai/oh-story-claudecode -y -g`, then `/story-setup` inside the agent.
+- Install: `npx skills add demon820308/Story-xY -y -g`, then `/story-setup` inside the agent.
 - Site guide with a worked three-chapter example: https://zenstory.ai/oh-story/long-novel-continuity
 - Chapter outline template (what each chapter must change, and what stays hidden): https://zenstory.ai/oh-story/chapter-outline-template
 - Implementation notes: `skills/story-long-write/references/tracking-transaction.md`
-- Repository: https://github.com/zenstory-ai/oh-story-claudecode (formerly `worldwonderer/oh-story-claudecode`; old links redirect)
+- Repository: https://github.com/demon820308/Story-xY (formerly `worldwonderer/oh-story-claudecode`; old links redirect)
