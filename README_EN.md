@@ -103,12 +103,61 @@ It installs as 13 agent skills into the coding agent you already use. **The writ
 
 ## Experimental Branch: interactive-play
 
-> [!TIP]
-> **From Serialized Fiction to Interactive Branching Narrative**
-> Alongside the production pure-skill serialized writing suite, this repository hosts an experimental branch [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play). It explores integrating **interactive branching fiction, dynamic player choice panels, and state-machine narrative progression (Play Engine)**:
-> - 🎮 **Direct Link**: [Switch to `feature/interactive-play` Branch](https://github.com/demon820308/Story-xY/tree/feature/interactive-play)
-> - 📖 **Architecture Spec**: [`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md)
-> - 💡 **Key Concept**: Retains the single source of truth (`_tracking-state.json`) while powering multi-ending branching decisions via structured action intents (`PlayActionIntent`).
+<p align="center">
+  <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square"></a>
+  <a href="https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md"><img alt="Spec Document" src="https://img.shields.io/badge/Architecture-interactive--play--engine.md-1F6FEB?style=flat-square"></a>
+</p>
+
+Alongside the production pure-skill serialized writing suite, this repository hosts an experimental branch [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play). It explores integrating **interactive branching fiction (CYOA / interactive screenplay / text RPG adventure) and state-machine narrative progression (Play Engine)** directly into the skill architecture.
+
+### 1. Core Concept: From Static Writing to Dynamic Simulation
+
+- **Serialized Prose (`main` branch)**: Deterministic single-timeline progression via "Outline → Scene Budgeting → Hook Governance → Drafting → De-slop".
+- **Interactive Simulation (`feature/interactive-play`)**: Generates 2–4 mutually exclusive action intents (`PlayActionIntent`) per scene. The Agent acts as a **Narrative Arbiter (DM)**, evaluating player choices against physical clues, world rules, and character stakes in real-time.
+
+### 2. Installation & Branch Switching
+
+- **Option A (Local Git Checkout)**:
+  ```bash
+  cd E:\story-xy
+  git checkout feature/interactive-play
+  ```
+- **Option B (CLI Package Install with Branch Pin)**:
+  ```bash
+  npx skills add demon820308/Story-xY#feature/interactive-play -y -g
+  ```
+- **Option C (Agent In-Chat Installation)**:
+  ```text
+  Install this branch: https://github.com/demon820308/Story-xY/tree/feature/interactive-play
+  ```
+
+### 3. Usage & Play Loop inside your Agent
+
+Once switched, all 13 standard skills remain 100% active. You can prompt your Agent to run an interactive loop:
+
+#### Prompt Example
+> "Following `docs/experimental/interactive-play-engine.md`, convert this scene into an **interactive screenplay**: generate 1 scene prose beat followed by 2–4 player action intents (PlayActionIntent) with explicit stakes, intent, and manner."
+
+#### Gameplay Loop
+1. **Agent Presents Scene & Choice Panel**:
+   - **Prose**: 800–1500 words of atmospheric, de-slopped prose.
+   - **Choice Panel**:
+     - `[1] Probe subtly`: [Intent: Read facial micro-expressions] [Risk: Very Low] [Cost: Spends conversational turn]
+     - `[2] Strike decisively`: [Intent: Neutralize threat] [Risk: High, may trigger alarm bells]
+     - `[3] Feign compliance & mark path`: [Intent: Trace behind-the-scenes actors] [Hidden Gain: Unlocks secret room clues]
+2. **Player Decision**:
+   - Reply with option number (e.g., `Choice 2`) or custom derivative action (`"I choose 1, but secretly ready my dagger"`).
+3. **State Machine (PlayReducer) Progression**:
+   - The Agent evaluates outcomes against author truth, updating active hook registers, physical clues, and secondary fallout for the subsequent scene.
+
+### 4. Experimental Assets
+
+| File / Component | Description |
+|:---|:---|
+| [`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md) | Full architectural spec for state-machine branching, entity schemas, and choice panels |
+| `PlayActionIntent` | Structured player intent schema (actionKind, targetEntityLabel, risk, ambiguity) |
+| `PlayEntityType` | Entity classifications (actor, location, item, evidence, clue, proof_chain, rule) |
+| `PlayReducer` | State progression contract preserving the single source of truth |
 
 ---
 
