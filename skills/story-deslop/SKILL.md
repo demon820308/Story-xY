@@ -45,7 +45,7 @@ metadata: {"openclaw":{"source":"https://github.com/zenstory-ai/oh-story-claudec
 node scripts/check-ai-patterns.js --check --fail-on=blocking <正文文件...>
 ```
 
-脚本命中是定位线索，零命中不代替三层扫描。每类提示归哪层、判断什么，见 expression.md 末节的索引；blocking 要改到净或按白名单保留（见 Phase 4），advisory 回到语境判断，不为归零机械改稿。完整词条仅在需要定位某种表达时查 [references/banned-words.md](references/banned-words.md)。
+脚本命中是定位线索，零命中不代替三层扫描。每类提示归哪层、判断什么，见 expression.md 末节的索引；二层语义去味深查参考 [references/semantic-seven-questions.md](references/semantic-seven-questions.md)；blocking 要改到净或按白名单保留（见 Phase 4），advisory 回到语境判断，不为归零机械改稿。完整词条仅在需要定位某种表达时查 [references/banned-words.md](references/banned-words.md)。
 
 文件前 6 行内、章节标题下有 `<!-- 去味:跳过 -->` 而作者这次要求去味时，照常处理：blocking 清零后删掉这一行；仍有剩余阻塞时保留，并在报告里告诉作者这章仍按跳过处理。
 

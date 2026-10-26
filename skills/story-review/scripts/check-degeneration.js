@@ -40,6 +40,7 @@ const PLACEHOLDER_PATTERNS = [
   { re: /^(Sure|Certainly|Here'?s|As an AI|I (?:cannot|can't|am unable|apologize))/, label: '元信息泄漏（英文 AI 腔）', hard: true },
   { re: /[（(](此处|以下|这里|下文|后续)?\s*(省略|略)(去|过)?[^）)]{0,10}[）)]/, label: '占位符（括号省略）', hard: true },
   { re: /(未完待续|TODO|占位符|placeholder)/, label: '占位符', hard: true },
+  { re: /[\[【(（](?:润色备注|写作说明|场景说明|本章小结|字数统计|字数：|Draft Note|Author Note)[^\]】)）]*[\]】)）]/i, label: '元信息泄漏（模型提示/说明标签）', hard: true },
   { re: /我(无法|不能)(继续(写|创作|生成|下去)|生成(内容|文本|正文)?|创作|续写|完成(这个|本)?(章|篇|创作|请求))/, label: '元信息泄漏（生成拒绝语）', hard: false },
 ];
 

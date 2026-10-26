@@ -10,7 +10,7 @@
 | [short-reversal.md](short-reversal.md) · [villain-and-reveal.md](villain-and-reveal.md) | 设计反转；设计反派、真相揭露与报应 |
 | [emotional-methods.md](emotional-methods.md) · [hooks-chapter.md](hooks-chapter.md) | 设计情感结构（三板斧 / 拉扯节奏）；节尾钩子与段落钩子 |
 | [benchmark-recall.md](benchmark-recall.md) · [cross-book-recall.md](cross-book-recall.md) | 有对标时选定与召回；2 本以上时召回副对标 |
-| [short-format.md](short-format.md) · [short-craft.md](short-craft.md) · [scene-craft.md](scene-craft.md) | 写正文：格式与字数统计；情绪直写与在场叙述；场景写法 |
+| [short-format.md](short-format.md) · [short-craft.md](short-craft.md) · [scene-craft.md](scene-craft.md) · [packaging-and-truth.md](packaging-and-truth.md) | 正文格式字数、情绪在场、场景及交付闭环包装 |
 | [dialogue-mastery.md](dialogue-mastery.md) | 写对话 |
 | [agent-calls.md](agent-calls.md) | 派写手写正文或去味的 prompt |
 | [style-resolution.md](style-resolution.md) | 写正文、改写、去味或审稿前裁决文风 |
@@ -18,4 +18,4 @@
 | [expression.md](expression.md) · [narrative-focus.md](narrative-focus.md) · [story-logic.md](story-logic.md) | 作者要完整三层去味时（入口见 short-deslop.md） |
 | [author-memory.md](author-memory.md) · [author-memory-maintenance.md](author-memory-maintenance.md) | 管理作者习惯 |
 
-**同一主题先读谁**：平台、导语、字数 → `submission-craft.md`；情绪怎么写 → `short-craft.md`「情绪落地」；人物声线与开篇 → 题材包的「对话风格」「开篇范式」；反转 → `short-reversal.md`，反派揭露 → `villain-and-reveal.md`；格式与节奏 → `short-format.md`。
+**优先指路**：平台与导语 → `submission-craft.md`；情绪 → `short-craft.md`；反转与反派 → `short-reversal.md`、`villain-and-reveal.md`；格式 → `short-format.md`。
