@@ -13,6 +13,8 @@
   &nbsp;·&nbsp;
   <a href="#核心叙事工程资产"><b>核心技法</b></a>
   &nbsp;·&nbsp;
+  <a href="#实验性旁支-interactive-play"><b>实验性旁支</b></a>
+  &nbsp;·&nbsp;
   <a href="#常见问题"><b>常见问题</b></a>
   &nbsp;·&nbsp;
   <a href="README_EN.md"><b>English</b></a>
@@ -22,6 +24,7 @@
   <img alt="Branch" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
+  <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Experimental-interactive--play-FF6B6B?style=flat-square"></a>
 </p>
 
 > [!NOTE]
@@ -224,6 +227,67 @@ flowchart LR
 
 - **长篇平台**：起点中文网 · 番茄小说 · 晋江文学城 · 七猫小说 · 刺猬猫
 - **短篇平台**：知乎盐言故事 · 番茄短篇 · 七猫短篇 · 黑岩故事 · 点众
+
+---
+
+## 实验性旁支：interactive-play（互动叙事与分支演算）
+
+<p align="center">
+  <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square"></a>
+  <a href="https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md"><img alt="Spec Document" src="https://img.shields.io/badge/Architecture-interactive--play--engine.md-1F6FEB?style=flat-square"></a>
+</p>
+
+除了主线的纯 Skill 连载小说创作套件之外，仓库维护了一个独立的实验性旁支 [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play)。该分支旨在探索将**交互式分支小说（CYOA / 互动剧本 / 探索式文字冒险）与状态机演进（Play Engine）**深度整合进写作体系。
+
+### 1. 核心理念：从单向写作到动态推演
+
+- **单向连载（主线 `main`）**：确定性的单条因果链，按“大纲 → 场景分镜与预算 → 伏笔暗线 → 正文草拟 → 去AI味”闭环推进。
+- **互动演算（旁支 `feature/interactive-play`）**：单场景提供 2~4 个互斥行动意图（`PlayActionIntent`）。Agent 不再只扮演被动码字工具，而是充当 **DM / 叙事裁判（Narrative Arbiter）**，根据玩家抉择、动机与物理物证实时演算下一场景的因果分支。
+
+### 2. 怎么安装与切换
+
+- **方式一（本地仓库直接切换）**：
+  ```bash
+  cd E:\story-xy
+  git checkout feature/interactive-play
+  ```
+- **方式二（npm/skills 命令行全局安装指定分支）**：
+  ```bash
+  npx skills add demon820308/Story-xY#feature/interactive-play -y -g
+  ```
+- **方式三（直接在 Agent 对话中安装）**：
+  在支持 Git 仓库加载的 Agent 对话框中输入：
+  ```text
+  安装这个分支的技能：https://github.com/demon820308/Story-xY/tree/feature/interactive-play
+  ```
+
+### 3. Agent 内的使用姿势与交互流程
+
+在切换到该分支后，所有 13 个常规 Skill 依然 100% 可用。你可以直接对 Agent 下达互动推演指令：
+
+#### 触发提示词示例
+> “参考 `docs/experimental/interactive-play-engine.md` 的规范，把这段剧情设计成**互动剧本**：每次输出 1 个场景正文并附带 2~4 个玩家行动意图选项（PlayActionIntent），要求包含动作意图、风险评估与执行风格。”
+
+#### 交互推演体验
+1. **Agent 渲染场景与行动面板（Choice Panel）**：
+   - **场景正文**：严格遵照篇幅预算（800~1500 字）与去AI味标准描写当下的局势与感官冲突。
+   - **行动面板**：
+     - `[1] 不动声色试探`：[意图: 观察对方微表情] [风险: 极低] [代价: 消耗对话回合]
+     - `[2] 拔剑强攻破局`：[意图: 瞬间制敌] [风险: 极高，可能引来巡逻卫兵]
+     - `[3] 假意顺从并暗留标记`：[意图: 顺藤摸瓜] [隐藏收益: 解锁暗室线索]
+2. **玩家决策输入**：
+   - 读者回复数字（如 `选择 2`），或输入自定义衍生行动（如 `我选 1，但暗中扣住飞镖`）。
+3. **状态机（PlayReducer）结算推进**：
+   - Agent 根据单一真相库、世界观规则与角色好感度进行判定，自动更新伏笔状态、物证链与次级代价，推演进入下一场景分支。
+
+### 4. 实验性技术资产
+
+| 资产文件 / 概念 | 说明 |
+|:---|:---|
+| [`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md) | 互动剧本状态机、实体分类与意图解析架构设计文档 |
+| `PlayActionIntent` | 结构化动作意图定义（行动类型、目标实体、风险度、多义性与次级动作） |
+| `PlayEntityType` | 实体分类体系（角色、地点、道具、线索、证据链、世界观规则） |
+| `PlayReducer` | 状态演算契约：保证多分支推演不推翻全局底层真相库 |
 
 ---
 
