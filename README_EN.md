@@ -15,7 +15,7 @@
   &nbsp;·&nbsp;
   <a href="#narrative-engineering-assets"><b>Narrative Assets</b></a>
   &nbsp;·&nbsp;
-  <a href="#experimental-branch-interactive-play"><b>Experimental Branch</b></a>
+  <a href="#interactive-narrative--dm-mode"><b>Interactive / DM Mode</b></a>
   &nbsp;·&nbsp;
   <a href="#faq"><b>FAQ</b></a>
   &nbsp;·&nbsp;
@@ -109,44 +109,31 @@ It installs as 13 agent skills into the coding agent you already use. **The writ
 
 ---
 
-## Experimental Branch: interactive-play
+## Interactive Narrative & DM Mode
 
 <p align="center">
   <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square"></a>
-  <a href="https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md"><img alt="Spec Document" src="https://img.shields.io/badge/Architecture-interactive--play--engine.md-1F6FEB?style=flat-square"></a>
+  <a href="./docs/experimental/interactive-play-engine.md"><img alt="Spec Document" src="https://img.shields.io/badge/Architecture-interactive--play--engine.md-1F6FEB?style=flat-square"></a>
 </p>
 
-Alongside the production pure-skill serialized writing suite, this repository hosts an experimental branch [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play). It explores integrating **interactive branching fiction (CYOA / interactive screenplay / text RPG adventure) and state-machine narrative progression (Play Engine)** directly into the skill architecture.
+Story-xY supports both single-timeline serialized novel writing and **interactive branching narratives (CYOA / text RPG / interactive screenplay) via a deterministic state-machine simulation engine**. In this mode, the Agent transitions from a passive prose generator to an active **Dungeon Master (DM) / Narrative Arbiter**, dynamically resolving player choices against physical clues, world rules, and character stakes.
 
-### 1. Core Concept: From Static Writing to Dynamic Simulation
+### 1. Direct DM Mode on Main Branch (No Branch Switching Needed)
 
-- **Serialized Prose (`main` branch)**: Deterministic single-timeline progression via "Outline → Scene Budgeting → Hook Governance → Drafting → De-slop".
-- **Interactive Simulation (`feature/interactive-play`)**: Generates 2–4 mutually exclusive action intents (`PlayActionIntent`) per scene. The Agent acts as a **Narrative Arbiter (DM)**, evaluating player choices against physical clues, world rules, and character stakes in real-time.
+**No branch switching or reinstallation is required.** The main branch ships with the architectural spec [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md). Simply copy and send the following activation prompt to your Agent:
 
-### 2. Installation & Branch Switching
+```text
+Activate Interactive Dungeon Master (DM) mode. Based on Story-xY's de-slop and scene-budgeting rules, and the state-machine specifications in docs/experimental/interactive-play-engine.md:
+1. Establish current premise and opening crisis (or use my supplied outline/setting).
+2. For each turn, write 1 scene prose beat (800–1200 words, sensory-rich, zero AI fluff).
+3. Conclude each scene with an actionable [Choice Panel] presenting 2–4 distinct options with [Intent], [Risk], and [Potential Fallout / Gain].
+4. Halt and wait for my decision; upon receiving my action, arbitrate outcomes, update active hooks/clues, and advance to the next beat.
 
-- **Option A (Local Git Checkout)**:
-  ```bash
-  cd E:\story-xy
-  git checkout feature/interactive-play
-  ```
-- **Option B (CLI Package Install with Branch Pin)**:
-  ```bash
-  npx skills add demon820308/Story-xY#feature/interactive-play -y -g
-  ```
-- **Option C (Agent In-Chat Installation)**:
-  ```text
-  Install this branch: https://github.com/demon820308/Story-xY/tree/feature/interactive-play
-  ```
+Begin Scene 1 now.
+```
 
-### 3. Usage & Play Loop inside your Agent
+### 2. Gameplay Loop & Experience
 
-Once switched, all 13 standard skills remain 100% active. You can prompt your Agent to run an interactive loop:
-
-#### Prompt Example
-> "Following `docs/experimental/interactive-play-engine.md`, convert this scene into an **interactive screenplay**: generate 1 scene prose beat followed by 2–4 player action intents (PlayActionIntent) with explicit stakes, intent, and manner."
-
-#### Gameplay Loop
 1. **Agent Presents Scene & Choice Panel**:
    - **Prose**: 800–1500 words of atmospheric, de-slopped prose.
    - **Choice Panel**:
@@ -158,14 +145,28 @@ Once switched, all 13 standard skills remain 100% active. You can prompt your Ag
 3. **State Machine (PlayReducer) Progression**:
    - The Agent evaluates outcomes against author truth, updating active hook registers, physical clues, and secondary fallout for the subsequent scene.
 
-### 4. Experimental Assets
+### 3. How to Upgrade (Zero Reinstallation)
 
-| File / Component | Description |
-|:---|:---|
-| [`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md) | Full architectural spec for state-machine branching, entity schemas, and choice panels |
-| `PlayActionIntent` | Structured player intent schema (actionKind, targetEntityLabel, risk, ambiguity) |
-| `PlayEntityType` | Entity classifications (actor, location, item, evidence, clue, proof_chain, rule) |
-| `PlayReducer` | State progression contract preserving the single source of truth |
+Existing users do not need to reinstall. Upgrade seamlessly based on your environment:
+
+- **Local Git Repository (Antigravity / Codex / Pi / Cursor)**:
+  ```bash
+  cd E:\story-xy
+  git pull
+  ```
+- **CLI Package Install (npx skills)**:
+  ```bash
+  npx skills add demon820308/Story-xY -y -g
+  ```
+- **Existing Fiction Project**:
+  Run `/story-setup` from your novel project root to refresh references and agent configs without touching manuscripts.
+
+### 4. Dedicated Experimental Branch: feature/interactive-play
+
+For developers seeking an isolated sandbox for custom interactive engine features or game runtime experiments:
+- **Switch branch**: `git checkout feature/interactive-play`
+- **CLI install from branch**: `npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
+- **Architectural Specs**: See [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md).
 
 ---
 
