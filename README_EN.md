@@ -21,9 +21,17 @@
 </p>
 
 <p align="center">
+  <img alt="Branch" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
+
+> [!NOTE]
+> **Branch Notice (`feature/interactive-play`)**
+> This branch is an experimental sandbox for **Story-xY**, exploring the integration of **interactive branching fiction, dynamic player choice panels, and state-machine narrative engines**.
+> - For the stable release, visit the [`main` branch](https://github.com/demon820308/Story-xY/tree/main).
+> - Experimental architectural specs: [docs/experimental/interactive-play-engine.md](docs/experimental/interactive-play-engine.md).
+
 
 ---
 

@@ -19,9 +19,17 @@
 </p>
 
 <p align="center">
+  <img alt="Branch" src="https://img.shields.io/badge/Branch-feature%2Finteractive--play-FF6B6B?style=flat-square">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
 </p>
+
+> [!NOTE]
+> **分支说明 / Branch Notice (`feature/interactive-play`)**
+> 本分支为 **Story-xY** 的实验性旁支（Experimental Sandbox），旨在探索将 **互动式分支小说、动态选择面板（Choice Panel）与状态机演进（Play Engine）** 与纯 Skill 创作体系融合的原型。
+> - 核心稳定版本请查看 [`main` 分支](https://github.com/demon820308/Story-xY/tree/main)。
+> - 本分支技术文档参见 [docs/experimental/interactive-play-engine.md](docs/experimental/interactive-play-engine.md)。
+
 
 ---
 
