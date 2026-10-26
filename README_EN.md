@@ -153,12 +153,27 @@ Existing users do not need to reinstall. Upgrade seamlessly based on your enviro
 - **Existing Fiction Project**:
   Run `/story-setup` from your novel project root to refresh references and agent configs without touching manuscripts.
 
-### 4. Dedicated Experimental Branch: feature/interactive-play
+### 4. Letting the Agent Autonomously Upgrade to Branch (Zero Manual CLI)
 
-For developers seeking an isolated sandbox for custom interactive engine features or game runtime experiments:
-- **Switch branch**: `git checkout feature/interactive-play`
-- **CLI install from branch**: `npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
-- **Architectural Specs**: See [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md).
+> [!TIP]
+> **The Author Never Leaves the Chat; The Agent Handles the Upgrade**
+> If your Agent has the main branch installed and you want to upgrade or switch to the experimental branch, **you do NOT need to open a terminal**. Simply prompt your Agent inside the chat:
+> > "Upgrade current skills to the `feature/interactive-play` branch."
+> > (or: "Switch to the experimental branch skills.")
+> 
+> **What the Agent Does Under the Hood**:
+> 1. Reads the autonomous branch-management contract in [`story`](skills/story/SKILL.md);
+> 2. Automatically senses the environment and runs the upgrade via its tool:
+>    - **Git clone environment**: runs `git fetch origin feature/interactive-play && git checkout feature/interactive-play`
+>    - **`npx skills` environment**: runs `npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
+> 3. Notifies you: "Branch successfully switched. Please start a new session (or run `/compact`) to load the branch skills."
+> 
+> *To revert to main at any time, simply instruct the Agent: "Switch back to the main branch".*
+
+For manual developer workflows:
+- Local branch switch: `git checkout feature/interactive-play`
+- CLI package install: `npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
+- Architectural specs: [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md)
 
 ---
 

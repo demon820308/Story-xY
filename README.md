@@ -274,12 +274,27 @@ Story-xY 不仅支持单向连载网文创作，还内置了**交互式分支叙
 - **已有写作项目**：
   在项目根目录运行 `/story-setup`，自动无损同步最新的参考资料与宿主配置。
 
-### 4. 独立实验分支：feature/interactive-play
+### 4. 让 Agent 自主升级到旁支（作者无需动手敲命令）
 
-如果你希望在一个完全隔离的分支中做深度二次开发或探索纯粹的游戏化叙事原型，本仓库同步维护了 [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play) 旁支：
-- **切换到旁支**：`git checkout feature/interactive-play`
-- **命令行安装旁支**：`npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
-- **核心技术资产**：详见 [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md)。
+> [!TIP]
+> **作者无需离开对话框，Agent 自主执行升级与分支切换**
+> 如果当前 Agent 已安装了主分支技能，想要切换到旁支体验完整实验特性，**作者完全不需要打开终端敲命令**。直接在 Agent 的对话框里对它说：
+> > “帮我把当前技能升级到旁支 `feature/interactive-play`”
+> > （或直接说：“切换到实验分支技能”）
+> 
+> **Agent 的后台自动化处理流程**：
+> 1. Agent 依据内置的 [`story`](skills/story/SKILL.md) 技能规范，自动识别分支切换指令；
+> 2. 自动判断当前宿主安装方式并调用终端工具执行：
+>    - **Git 仓库克隆环境**：执行 `git fetch origin feature/interactive-play && git checkout feature/interactive-play`
+>    - **`npx skills` 环境**：执行 `npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
+> 3. 执行完毕后提示作者：“已自动完成分支升级，请新开一个会话（或输入 `/compact` 刷新上下文）即可生效”。
+> 
+> *若后续想切回主线，同样直接对 Agent 说“切回主线”即可，全程全自动。*
+
+如果你想手动通过命令行切换，也可以执行：
+- 本地切换：`git checkout feature/interactive-play`
+- 命令行安装：`npx skills add demon820308/Story-xY#feature/interactive-play -y -g`
+- 核心技术架构：详见 [`docs/experimental/interactive-play-engine.md`](docs/experimental/interactive-play-engine.md)
 
 ---
 
