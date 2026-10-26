@@ -1,0 +1,102 @@
+name: Agent CLI compatibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.agents/**'
+      - '.claude-plugin/**'
+      - '.github/workflows/cli-compat.yml'
+      - 'scripts/**'
+      - 'skills/**'
+  pull_request:
+    paths:
+      - '.agents/**'
+      - '.claude-plugin/**'
+      - '.github/workflows/cli-compat.yml'
+      - 'scripts/**'
+      - 'skills/**'
+  schedule:
+    - cron: '23 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-compat-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  claude-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.x'
+      - name: Install current Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@latest
+      - name: Run real Claude Code adapter check
+        env:
+          CLAUDE_REAL_CHECK: '1'
+        run: bash scripts/check-claude-adapter.sh
+
+  codex:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.x'
+      - name: Install current Codex CLI
+        run: npm install --global @openai/codex@latest
+      - name: Run real Codex CLI discovery test
+        run: bash scripts/test-codex-cli-e2e.sh
+
+  opencode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.x'
+      # OpenCode 2.x 发布在 @opencode/cli；opencode-ai 停在 1.x，本适配不再支持。
+      - name: Install current OpenCode 2.x CLI
+        run: npm install --global @opencode/cli@latest
+      - name: Run real OpenCode CLI adapter test
+        run: bash scripts/test-opencode-cli-e2e.sh
+      - name: Check generated agent permissions with real tools
+        run: python3 scripts/test-agent-permissions.py --opencode "$(command -v opencode)"
+
+  openclaw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          # Resolve the latest Node 24 patch for openclaw@latest engine requirements.
+          node-version: 24
+          check-latest: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.x'
+      - name: Install current OpenClaw CLI
+        run: npm install --global openclaw@latest
+      - name: Run real OpenClaw skill discovery test
+        env:
+          OPENCLAW_REAL_CHECK: '1'
+        run: bash scripts/check-openclaw-skills.sh
