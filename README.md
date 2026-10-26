@@ -13,6 +13,8 @@
   &nbsp;·&nbsp;
   <a href="#核心叙事工程资产"><b>核心技法</b></a>
   &nbsp;·&nbsp;
+  <a href="#实验性旁支-interactive-play"><b>实验性旁支</b></a>
+  &nbsp;·&nbsp;
   <a href="#常见问题"><b>常见问题</b></a>
   &nbsp;·&nbsp;
   <a href="README_EN.md"><b>English</b></a>
@@ -21,6 +23,7 @@
 <p align="center">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
+  <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Experimental-interactive--play-FF6B6B?style=flat-square"></a>
 </p>
 
 ---
@@ -216,6 +219,17 @@ flowchart LR
 
 - **长篇平台**：起点中文网 · 番茄小说 · 晋江文学城 · 七猫小说 · 刺猬猫
 - **短篇平台**：知乎盐言故事 · 番茄短篇 · 七猫短篇 · 黑岩故事 · 点众
+
+---
+
+## 实验性旁支：interactive-play（互动叙事与分支演算）
+
+> [!TIP]
+> **从单向连载写作迈向互动式分支叙事**
+> 除了当前的纯 Skill 连载小说创作套件之外，仓库还维护了一个独立的实验性旁支 [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play)。该分支旨在探索将**交互式分支叙事、动态选择面板（Choice Panel）与状态机演进（Play Engine）**深度整合进写作体系：
+> - 🎮 **分支直达**：[切换到 `feature/interactive-play` 分支](https://github.com/demon820308/Story-xY/tree/feature/interactive-play)
+> - 📖 **架构设计文档**：[`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md)
+> - 💡 **核心探索**：保留主线单一真相库与伏笔治理机制，通过动作意图判定（`PlayActionIntent`）驱动多结局与场景支线推演。
 
 ---
 

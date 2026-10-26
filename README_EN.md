@@ -15,6 +15,8 @@
   &nbsp;·&nbsp;
   <a href="#narrative-engineering-assets"><b>Narrative Assets</b></a>
   &nbsp;·&nbsp;
+  <a href="#experimental-branch-interactive-play"><b>Experimental Branch</b></a>
+  &nbsp;·&nbsp;
   <a href="#faq"><b>FAQ</b></a>
   &nbsp;·&nbsp;
   <a href="README.md"><b>中文</b></a>
@@ -23,6 +25,7 @@
 <p align="center">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
+  <a href="https://github.com/demon820308/Story-xY/tree/feature/interactive-play"><img alt="Branch interactive-play" src="https://img.shields.io/badge/Experimental-interactive--play-FF6B6B?style=flat-square"></a>
 </p>
 
 ---
@@ -95,6 +98,17 @@ It installs as 13 agent skills into the coding agent you already use. **The writ
 - **`story-review`**: Multi-perspective rubric-based chapter auditing.
 - **`story-cover`**: Book cover generation prompts.
 - **`browser-cdp`**: Headless browser automation via CDP.
+
+---
+
+## Experimental Branch: interactive-play
+
+> [!TIP]
+> **From Serialized Fiction to Interactive Branching Narrative**
+> Alongside the production pure-skill serialized writing suite, this repository hosts an experimental branch [`feature/interactive-play`](https://github.com/demon820308/Story-xY/tree/feature/interactive-play). It explores integrating **interactive branching fiction, dynamic player choice panels, and state-machine narrative progression (Play Engine)**:
+> - 🎮 **Direct Link**: [Switch to `feature/interactive-play` Branch](https://github.com/demon820308/Story-xY/tree/feature/interactive-play)
+> - 📖 **Architecture Spec**: [`docs/experimental/interactive-play-engine.md`](https://github.com/demon820308/Story-xY/blob/feature/interactive-play/docs/experimental/interactive-play-engine.md)
+> - 💡 **Key Concept**: Retains the single source of truth (`_tracking-state.json`) while powering multi-ending branching decisions via structured action intents (`PlayActionIntent`).
 
 ---
 
