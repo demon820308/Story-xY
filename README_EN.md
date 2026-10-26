@@ -15,7 +15,7 @@
   &nbsp;·&nbsp;
   <a href="#installation"><b>Install</b></a>
   &nbsp;·&nbsp;
-  <a href="#native-multi-agent-support"><b>Multi-Agent</b></a>
+  <a href="#supported-agents"><b>Supported Agents</b></a>
   &nbsp;·&nbsp;
   <a href="#narrative-engineering-assets"><b>Narrative Assets</b></a>
   &nbsp;·&nbsp;
@@ -27,8 +27,6 @@
 <p align="center">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
-  <img alt="Zero API Key" src="https://img.shields.io/badge/API%20Key-None%20Needed-success?style=flat-square">
-  <img alt="Multi-Agent" src="https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex%20%7C%20Pi%20%7C%20Claude%20%7C%20OpenCode-blueviolet?style=flat-square">
 </p>
 
 ---
@@ -43,7 +41,7 @@ It installs as 13 agent skills into the coding agent you already use. **The writ
 
 1. **Host-Model Direct Drive (Zero Extra API Overhead)**
    - No private inference layer. Works seamlessly with Claude Code (Claude 3.7 / 3.5 Sonnet), Google Antigravity (Gemini 2.5 Pro / Flash), OpenAI Codex, Pi Coding Agent, and OpenCode (DeepSeek-V3 / R1).
-2. **Native Out-of-the-Box Multi-Agent Adaptation**
+2. **Native Out-of-the-Box Host Adaptation**
    - Repository-root configs are pre-materialized: Google Antigravity (`.antigravity/` & `.agents/`), OpenAI Codex (`.codex/`), Pi Coding Agent (`.pi/` & `PI.md`), Claude Code (`.claude-plugin/` & `CLAUDE.md`), OpenCode (`opencode.json`), ZCode (`.zcode-plugin/`), OpenClaw (`.clawhub/`), Reasonix (`reasonix-plugin.json`). Clone and open — zero setup commands required.
 3. **Deterministic Hard Gates & Guardrails**
    - Pre-write gates: validates scene structure, hook quotas, and tracking state.
@@ -56,7 +54,7 @@ It installs as 13 agent skills into the coding agent you already use. **The writ
 
 ---
 
-## Native Multi-Agent Support
+## Supported Agents
 
 | Host Agent | Repository Adapter Path | Features Supported |
 |:---|:---|:---|

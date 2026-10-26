@@ -25,8 +25,6 @@
 <p align="center">
   <img alt="Skills 13" src="https://img.shields.io/badge/Skills-13-081431?style=flat-square">
   <a href="./LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/License-MIT-1F6FEB?style=flat-square"></a>
-  <img alt="Zero API Key" src="https://img.shields.io/badge/API%20Key-None%20Needed-success?style=flat-square">
-  <img alt="Multi-Agent" src="https://img.shields.io/badge/Agents-Antigravity%20%7C%20Codex%20%7C%20Pi%20%7C%20Claude%20%7C%20OpenCode-blueviolet?style=flat-square">
 </p>
 
 ---
