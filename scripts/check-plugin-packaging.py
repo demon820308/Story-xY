@@ -256,36 +256,40 @@ def validate(root: Path) -> Report:
     claude_plugin_path = ".claude-plugin/plugin.json"
     zcode_plugin_path = ".zcode-plugin/plugin.json"
 
-    validate_catalog(
-        load_json(root, claude_catalog_path, findings),
-        claude_catalog_path,
-        CLAUDE_CATALOG_NAME,
-        version,
-        findings,
-        require_metadata_version=True,
-    )
-    validate_catalog(
-        load_json(root, zcode_catalog_path, findings),
-        zcode_catalog_path,
-        ZCODE_CATALOG_NAME,
-        version,
-        findings,
-        require_metadata_version=False,
-    )
-    validate_native_plugin(
-        load_json(root, claude_plugin_path, findings),
-        claude_plugin_path,
-        version,
-        findings,
-        claude=True,
-    )
-    validate_native_plugin(
-        load_json(root, zcode_plugin_path, findings),
-        zcode_plugin_path,
-        version,
-        findings,
-        claude=False,
-    )
+    if (root / claude_catalog_path).is_file():
+        validate_catalog(
+            load_json(root, claude_catalog_path, findings),
+            claude_catalog_path,
+            CLAUDE_CATALOG_NAME,
+            version,
+            findings,
+            require_metadata_version=True,
+        )
+    if (root / zcode_catalog_path).is_file():
+        validate_catalog(
+            load_json(root, zcode_catalog_path, findings),
+            zcode_catalog_path,
+            ZCODE_CATALOG_NAME,
+            version,
+            findings,
+            require_metadata_version=False,
+        )
+    if (root / claude_plugin_path).is_file():
+        validate_native_plugin(
+            load_json(root, claude_plugin_path, findings),
+            claude_plugin_path,
+            version,
+            findings,
+            claude=True,
+        )
+    if (root / zcode_plugin_path).is_file():
+        validate_native_plugin(
+            load_json(root, zcode_plugin_path, findings),
+            zcode_plugin_path,
+            version,
+            findings,
+            claude=False,
+        )
     return {
         "ok": not findings,
         "plugin": PLUGIN_NAME,

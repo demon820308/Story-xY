@@ -21,13 +21,13 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 
 ## Phase 1：判断宿主与项目
 
-**先自检参考目录**：以正在执行的本 `SKILL.md` 所在目录为准，列出与它同级的 `references/` 下的子目录，核对下面 4 个名字是否都在**且都非空**——`agent-references`、`templates`、`pi`、`antigravity`；同级 `references/deploy-pi.md`、`references/deploy-antigravity.md`、`scripts/merge-antigravity-hooks.py`、`scripts/generate-antigravity-agents.mjs`、`scripts/deploy-antigravity-skills.py`、`scripts/merge-project-instructions.py` 与 `scripts/copy-path-safety.py` 也必须存在。有缺即 skill 包没装全，**立即停止，不写任何部署文件**，报告里区分「缺目录」「目录为空」和「缺脚本或部署文件」，并给出修复指令。
+**先自检参考目录**：以正在执行的本 `SKILL.md` 所在目录为准，列出与它同级的 `references/` 下的子目录，核对下面 4 个名字是否都在**且都非空**——`agent-references`、`templates`、`pi`、`antigravity`；同级 `references/deploy-*.md`（`references/deploy-pi.md`、`references/deploy-antigravity.md`）、`scripts/merge-antigravity-hooks.py`、`scripts/generate-antigravity-agents.mjs`、`scripts/deploy-antigravity-skills.py`、`scripts/merge-project-instructions.py` 与 `scripts/copy-path-safety.py` 也必须存在。有缺即 skill 包没装全，**立即停止，不写任何部署文件**，报告里区分「缺目录」「目录为空」和「缺脚本或部署文件」，并给出修复指令。
 
 1. 检查当前目录是否已部署过（存在 `.story-deployed`）
    - `agents_version` 缺失、非整数或小于 `36` → 标记为待更新，继续执行当前部署
    - `agents_version: 36` → 提示重新部署只用当前本地 skill 包刷新项目文件
    - `agents_version` 大于 `36` → 当前 story-setup 比项目部署旧；停止以避免降级覆盖
-   - 同时读 `target_cli` 字段，已部署项目以 sentinel 里的值为准
+   - 同时读 `target_cli` 字段。**已部署项目以 sentinel 里的值为准**：非空时这些端照常重新部署；第 4 步仍判断当前宿主：若判断出当前宿主不在 sentinel 中，问「你现在用的是 {当前宿主}，要一起装上吗？」，选是则追加进 `target_cli`。
 2. 检查是否有书名目录（包含 `追踪/` 子目录的目录，或用户自定义结构）
    - 有 → 识别为长篇项目，显示当前项目信息
    - 无 → 识别为新项目或短篇项目
@@ -35,6 +35,7 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 4. **判断当前宿主（能判断就不问作者）**。依次看，第一条能定下来的就用：
    - 你自身的运行环境：系统提示、可用工具名或 skill 调用语法已表明你运行在 Pi（含 Pi Web）或 Google Antigravity（含命令行 `agy`）里；
    - 正在执行的本 `SKILL.md` 的安装位置带有宿主专属目录（如 `.pi/`、`.gemini/`、`.agents/`）；
+   - 定不出、项目标记恰好只有一个宿主时问作者「这次还是它吗？」；
    - 默认为 `pi`。
 5. 看项目里已有哪些宿主的标记：
    - `.pi/` 或 `AGENTS.md` 中的 Pi 段（标题行含 `Pi / Pi Web 写作工作台`）→ `target_cli = pi`
@@ -54,6 +55,8 @@ Phase 2 幂等：复制、写入与各宿主合并重复执行结果一致。受
 |---|---|
 | `pi` | [references/deploy-pi.md](references/deploy-pi.md) |
 | `antigravity` | [references/deploy-antigravity.md](references/deploy-antigravity.md) |
+
+**复制路径安全与清理自嵌套残留**：`Source path` 是包内来源，`Target path` 相对用户项目根。执行递归复制步骤前，先用 `scripts/copy-path-safety.py` 检查。该脚本按 `Path.resolve` / `realpath` 语义跟随已有 symlink，并在两侧都存在时用 `samefile` 核对文件系统对象；坚决拒绝 `target-descendant`（目标位于源目录内）。若发现历史异常复制导致目录嵌进自身，必须先行清理自嵌套残留再执行部署。
 
 ### Step 2：创建部署标记
 

@@ -156,12 +156,10 @@ echo "OK: hook foreshadow detection warns only on overdue/abnormal states"
 # 之后用变异测试证明这把锁真能抓到单端漂移（旧版只 grep 规范串「是否出现」，末尾追加分支照样过）。
 JS_CORE="$REPO_ROOT/skills/story-setup/references/templates/hooks/story_hook_core.js"
 PY_HOOK="$REPO_ROOT/skills/story-setup/references/codex/hooks/story_codex_hook.py"
-for file in "$JS_CORE" "$PY_HOOK"; do
-  if [ ! -f "$file" ]; then
-    echo "FAIL: required file not found: $file"
-    exit 1
-  fi
-done
+if [ ! -f "$JS_CORE" ]; then
+  echo "FAIL: required file not found: $JS_CORE"
+  exit 1
+fi
 PYBIN=""
 for cand in python3 python py; do
   if "$cand" -c "" >/dev/null 2>&1; then PYBIN="$cand"; break; fi
@@ -398,11 +396,15 @@ if __name__ == "__main__":
 PY
 
 toxic_fail=0
-"$PYBIN" "$REGEX_SYNC" "$JS_CORE" "$PY_HOOK" || toxic_fail=1
+CHECK_FILES=("$JS_CORE")
 
-# 变异测试：每种单端漂移都必须让上面的比对变红；无关改动（数组里加注释）不能误报。
-mutate() { # $1 源文件 $2 输出 $3 旧串 $4 新串（旧串须恰好出现一次）
-  "$PYBIN" - "$1" "$2" "$3" "$4" <<'PY'
+if [ -f "$PY_HOOK" ]; then
+  CHECK_FILES+=("$PY_HOOK")
+  "$PYBIN" "$REGEX_SYNC" "$JS_CORE" "$PY_HOOK" || toxic_fail=1
+
+  # 变异测试：每种单端漂移都必须让上面的比对变红；无关改动（数组里加注释）不能误报。
+  mutate() {
+    "$PYBIN" - "$1" "$2" "$3" "$4" <<'PY'
 import sys
 src, dst, old, new = sys.argv[1:5]
 text = open(src, encoding="utf-8").read()
@@ -411,31 +413,34 @@ if text.count(old) != 1:
     sys.exit(2)
 open(dst, "w", encoding="utf-8", newline="").write(text.replace(old, new))
 PY
-}
-expect_mutation() { # $1 描述 $2 期望(fail|pass) $3 js|py $4 旧串 $5 新串
-  local js="$JS_CORE" py="$PY_HOOK" out="$TMP_DIR/mutant" rc=0
-  if [ "$3" = js ]; then mutate "$JS_CORE" "$out.js" "$4" "$5" || { echo "FAIL: 变异锚点失效：$1"; toxic_fail=1; return; }; js="$out.js"
-  else mutate "$PY_HOOK" "$out.py" "$4" "$5" || { echo "FAIL: 变异锚点失效：$1"; toxic_fail=1; return; }; py="$out.py"; fi
-  "$PYBIN" "$REGEX_SYNC" "$js" "$py" >/dev/null 2>&1 || rc=$?
-  if [ "$2" = fail ] && [ "$rc" -eq 0 ]; then echo "FAIL: 同步锁没抓到单端漂移：$1"; toxic_fail=1; fi
-  if [ "$2" = pass ] && [ "$rc" -ne 0 ]; then echo "FAIL: 同步锁误报无关改动：$1"; toxic_fail=1; fi
-}
-expect_mutation "JS 句式正则末尾追加分支" fail js '[却但偏]/g, "voice-contrast"' '[却但偏]|X/g, "voice-contrast"'
-expect_mutation "py 预告收尾正则末尾追加分支" fail py '即将(?:开始|来临|降临)")' '即将(?:开始|来临|降临)|X")'
-expect_mutation "JS 正则加 i flag" fail js '即将(?:开始|来临|降临)/
+  }
+  expect_mutation() {
+    local js="$JS_CORE" py="$PY_HOOK" out="$TMP_DIR/mutant" rc=0
+    if [ "$3" = js ]; then mutate "$JS_CORE" "$out.js" "$4" "$5" || { echo "FAIL: 变异锚点失效：$1"; toxic_fail=1; return; }; js="$out.js"
+    else mutate "$PY_HOOK" "$out.py" "$4" "$5" || { echo "FAIL: 变异锚点失效：$1"; toxic_fail=1; return; }; py="$out.py"; fi
+    "$PYBIN" "$REGEX_SYNC" "$js" "$py" >/dev/null 2>&1 || rc=$?
+    if [ "$2" = fail ] && [ "$rc" -eq 0 ]; then echo "FAIL: 同步锁没抓到单端漂移：$1"; toxic_fail=1; fi
+    if [ "$2" = pass ] && [ "$rc" -ne 0 ]; then echo "FAIL: 同步锁误报无关改动：$1"; toxic_fail=1; fi
+  }
+  expect_mutation "JS 句式正则末尾追加分支" fail js '[却但偏]/g, "voice-contrast"' '[却但偏]|X/g, "voice-contrast"'
+  expect_mutation "py 预告收尾正则末尾追加分支" fail py '即将(?:开始|来临|降临)")' '即将(?:开始|来临|降临)|X")'
+  expect_mutation "JS 正则加 i flag" fail js '即将(?:开始|来临|降临)/
 ' '即将(?:开始|来临|降临)/i
 '
-expect_mutation "JS 句式正则去掉 g flag" fail js '[却但偏]/g, "voice-contrast"' '[却但偏]/, "voice-contrast"'
-expect_mutation "py 正则加 IGNORECASE" fail py '[却但偏]"), "voice-contrast"' '[却但偏]", re.IGNORECASE), "voice-contrast"'
-expect_mutation "JS 分句边界集多一个字符" fail js 'const TOXIC_CLAUSE_BOUNDARY = new Set(Array.from("' 'const TOXIC_CLAUSE_BOUNDARY = new Set(Array.from("X'
-expect_mutation "JS 单端新增一条毒句式常量" fail js 'const TOXIC_REVERSE_TAIL = ' 'const TOXIC_EXTRA_PATTERN = /x/
+  expect_mutation "JS 句式正则去掉 g flag" fail js '[却但偏]/g, "voice-contrast"' '[却但偏]/, "voice-contrast"'
+  expect_mutation "py 正则加 IGNORECASE" fail py '[却但偏]"), "voice-contrast"' '[却但偏]", re.IGNORECASE), "voice-contrast"'
+  expect_mutation "JS 分句边界集多一个字符" fail js 'const TOXIC_CLAUSE_BOUNDARY = new Set(Array.from("' 'const TOXIC_CLAUSE_BOUNDARY = new Set(Array.from("X'
+  expect_mutation "JS 单端新增一条毒句式常量" fail js 'const TOXIC_REVERSE_TAIL = ' 'const TOXIC_EXTRA_PATTERN = /x/
 const TOXIC_REVERSE_TAIL = '
-expect_mutation "py 修法文案漂移" fail py '"negation-parade", "「没有…，没有…」排比删到只剩一个或全删' '"negation-parade", "「没有…，没有…」排比删到只剩一个'
-expect_mutation "py 窗口 600→500" fail py '_TOXIC_TRAILER_WINDOW = 600' '_TOXIC_TRAILER_WINDOW = 500'
-expect_mutation "JS 兜底网数组里加一行注释（无关改动）" pass js 'const HARD_PATTERNS = [
+  expect_mutation "py 修法文案漂移" fail py '"negation-parade", "「没有…，没有…」排比删到只剩一个或全删' '"negation-parade", "「没有…，没有…」排比删到只剩一个'
+  expect_mutation "py 窗口 600→500" fail py '_TOXIC_TRAILER_WINDOW = 600' '_TOXIC_TRAILER_WINDOW = 500'
+  expect_mutation "JS 兜底网数组里加一行注释（无关改动）" pass js 'const HARD_PATTERNS = [
 ' 'const HARD_PATTERNS = [
   // 无关注释
 '
+else
+  echo "INFO: codex python hook removed during host convergence; skipping py<->js AST regex parity check"
+fi
 
 # 欠账门的豁免标记与门文案 js↔py 同步。Claude bash 侧前置门（guard-outline-before-prose.sh）
 # 的判定与文案由 test-prose-net-parity.sh D 段按真实写入逐场景锁。
@@ -445,7 +450,7 @@ GATE_SYNC=(
   '<!-- 去味:跳过 --> 后重试'
 )
 for needle in "${GATE_SYNC[@]}"; do
-  for file in "$JS_CORE" "$PY_HOOK"; do
+  for file in "${CHECK_FILES[@]}"; do
     if ! grep -Fq -- "$needle" "$file"; then
       echo "FAIL: 欠账门规范串缺失/漂移 — 「${needle}」未出现在 $(basename "$file")"
       toxic_fail=1

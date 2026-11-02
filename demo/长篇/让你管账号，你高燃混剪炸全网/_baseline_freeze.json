@@ -1,0 +1,16 @@
+{
+  "book_title": "让你管账号，你高燃混剪炸全网",
+  "baseline_version": "1.1.0",
+  "frozen_at": "2026-11-02T14:36:00Z",
+  "committed_chapters": 25,
+  "outline_ahead_chapters": 26,
+  "status": "frozen_regression_baseline",
+  "host_support": [
+    "pi",
+    "antigravity"
+  ],
+  "verification": {
+    "probe_entry": "node scripts/verify-demo-baseline.mjs",
+    "integrity_mode": "route_a_true_path"
+  }
+}

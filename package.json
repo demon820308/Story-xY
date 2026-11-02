@@ -2,13 +2,13 @@
   "name": "story-xy-studio",
   "version": "1.1.0",
   "description": "Story-xY Studio - Web-fiction Writing Agent Studio",
-  "homepage": "https://github.com/agegr/pi-web#readme",
+  "homepage": "https://github.com/demon820308/Story-xY#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/agegr/pi-web.git"
+    "url": "git+https://github.com/demon820308/Story-xY.git"
   },
   "bugs": {
-    "url": "https://github.com/agegr/pi-web/issues"
+    "url": "https://github.com/demon820308/Story-xY/issues"
   },
   "license": "MIT",
   "engines": {
@@ -47,7 +47,8 @@
     "test:e2e": "node e2e/run.mjs",
     "test": "node --experimental-strip-types --test \"app/**/*.test.mjs\" \"components/**/*.test.mjs\" \"hooks/**/*.test.mjs\" \"lib/**/*.test.mjs\" \"public/**/*.test.mjs\"",
     "release": "npm version patch --no-git-tag-version && npm run build && npm publish --access public",
-    "probe": "node verify-8-flows.mjs"
+    "probe": "node verify-8-flows.mjs",
+    "verify:demo": "node scripts/verify-demo-baseline.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-agent-core": "1.4.0",

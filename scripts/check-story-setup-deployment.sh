@@ -11,17 +11,12 @@ HOOKS_DIR="$SKILL_DIR/references/templates/hooks"
 AGENT_REFS_DIR="$SKILL_DIR/references/agent-references"
 SKILL_FILE="$SKILL_DIR/SKILL.md"
 # 入口只留通用流程；各宿主专属部署清单/算法/验证在 references/deploy-<target_cli>.md，入口按宿主只读一份。
-DEPLOY_HOSTS="claude-code opencode codex antigravity zcode openclaw reasonix generic pi"
+DEPLOY_HOSTS="antigravity pi"
 deploy_file() { printf '%s/references/deploy-%s.md' "$SKILL_DIR" "$1"; }
-DEPLOY_CLAUDE="$(deploy_file claude-code)"
-DEPLOY_OPENCODE="$(deploy_file opencode)"
-DEPLOY_ZCODE="$(deploy_file zcode)"
-DEPLOY_OPENCLAW="$(deploy_file openclaw)"
-DEPLOY_REASONIX="$(deploy_file reasonix)"
-DEPLOY_GENERIC="$(deploy_file generic)"
+DEPLOY_ANTIGRAVITY="$(deploy_file antigravity)"
 DEPLOY_PI="$(deploy_file pi)"
 SETTINGS_FILE="$SKILL_DIR/references/templates/settings-hooks.json"
-CLAUDE_MERGE="$SKILL_DIR/scripts/merge-claude-settings.py"
+ANTIGRAVITY_MERGE="$SKILL_DIR/scripts/merge-antigravity-hooks.py"
 COPY_PATH_SAFETY="$SKILL_DIR/scripts/copy-path-safety.py"
 TMP_DIR="$(mktemp -d)"
 CURRENT_AGENTS_VERSION="$(node -e 'process.stdout.write(String(require(process.argv[1]).agents_version))' "$SCRIPT_DIR/current-contract.json")"
@@ -92,7 +87,7 @@ run_from_nested() {
   local script="$2"
   local nested="$root/nested/a/b"
   mkdir -p "$nested"
-  (cd "$nested" && CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/hooks/$script")
+  (cd "$nested" && CLAUDE_PROJECT_DIR="$root" bash "$root/.claude/hooks/$script" < /dev/null)
 }
 
 run_from_nested_no_project_dir() {
@@ -100,7 +95,7 @@ run_from_nested_no_project_dir() {
   local script="$2"
   local nested="$root/nested/a/b"
   mkdir -p "$nested"
-  (cd "$nested" && unset CLAUDE_PROJECT_DIR && bash "$root/.claude/hooks/$script")
+  (cd "$nested" && unset CLAUDE_PROJECT_DIR && bash "$root/.claude/hooks/$script" < /dev/null)
 }
 
 setup_git_repo() {
@@ -113,7 +108,7 @@ setup_git_repo() {
 run_commit_hook_command() {
   local root="$1"
   local command_text="$2"
-  (cd "$root" && CLAUDE_PROJECT_DIR="$root" STORY_COMMIT_COMMAND="$command_text" bash .claude/hooks/validate-story-commit.sh 2>&1 || true)
+  (cd "$root" && CLAUDE_PROJECT_DIR="$root" STORY_COMMIT_COMMAND="$command_text" bash .claude/hooks/validate-story-commit.sh < /dev/null 2>&1 || true)
 }
 
 assert_commit_warns() {
@@ -167,9 +162,8 @@ for hook in check-prose-after-write guard-outline-before-prose validate-story-co
   fi
   assert_grep 'story_hook_cli\.js' "$HOOKS_DIR/$hook.sh" "$hook.sh must delegate to story_hook_cli.js"
 done
-assert_grep '递归复制完整目录树|recursive' "$DEPLOY_CLAUDE" "Claude deploy file must require recursive hook deployment"
-assert_grep 'lib/common\.sh' "$DEPLOY_CLAUDE" "Claude deploy file must mention hooks/lib/common.sh"
-assert_grep 'lib/sentinel\.sh' "$DEPLOY_CLAUDE" "Claude deploy file must mention hooks/lib/sentinel.sh"
+assert_grep 'story_hook_core\.js' "$DEPLOY_ANTIGRAVITY" "Antigravity deploy file must mention story_hook_core.js"
+assert_grep 'story_antigravity_hook\.js' "$DEPLOY_ANTIGRAVITY" "Antigravity deploy file must mention story_antigravity_hook.js"
 echo "  OK TS1 hook dependency completeness"
 
 # TS1b — SessionStart 部署自检名单必须覆盖所有 hook 脚本（防新增 hook 漏登记，#195 review）。
@@ -209,7 +203,7 @@ for host in $DEPLOY_HOSTS; do
   done
 done
 extra_deploy_files="$(find "$SKILL_DIR/references" -maxdepth 1 -name 'deploy-*.md' | wc -l | tr -d ' ')"
-[ "$extra_deploy_files" = "9" ] || fail "story-setup must ship exactly 9 host deploy files, found $extra_deploy_files"
+[ "$extra_deploy_files" = "2" ] || fail "story-setup must ship exactly 2 host deploy files, found $extra_deploy_files"
 # 能从运行环境判断宿主就不问作者；问也用白话，不再追问部署位置。
 assert_grep '能判断就不问作者' "$SKILL_FILE" "story-setup must detect the current host before asking the author"
 assert_no_grep '让用户选择目标环境' "$SKILL_FILE" "story-setup must not ask first-time authors to pick among all hosts when the host is detectable"
@@ -217,18 +211,12 @@ assert_no_grep 'AskUserQuestion 确认部署位置' "$SKILL_FILE" "story-setup m
 echo "  OK TS2a host deploy files"
 
 # TS2 — Deployment checklist/manifest parseability
-for group in 'templates/hooks/' 'templates/rules' 'templates/agents' 'agent-references' 'settings-hooks\.json' 'CLAUDE\.md' '\.story-deployed'; do
-  assert_grep "$group" "$DEPLOY_CLAUDE" "deployment manifest missing asset group: $group"
+for group in 'deploy-antigravity-skills\.py' 'generate-antigravity-agents\.mjs' 'rules/oh-story\.md' 'hooks/hooks\.json' 'story_antigravity_hook\.js' 'merge-antigravity-hooks\.py'; do
+  assert_grep "$group" "$DEPLOY_ANTIGRAVITY" "Antigravity deployment manifest missing asset group: $group"
 done
-assert_grep '\.agents-pending-restart' "$DEPLOY_CLAUDE" "Claude deploy must create the one-shot restart marker"
-assert_file "$SKILL_DIR/references/openclaw/AGENTS.md.tmpl"
-assert_file "$SKILL_DIR/references/generic/AGENTS.md.tmpl"
-assert_file "$SKILL_DIR/references/reasonix/AGENTS.md.tmpl"
-assert_file "$SKILL_DIR/references/zcode/AGENTS.md.tmpl"
-assert_file "$SKILL_DIR/references/zcode/config.json.patch"
-assert_file "$SKILL_DIR/references/zcode/hooks/hooks.json"
-assert_file "$SKILL_DIR/references/zcode/hooks/story_zcode_hook.js"
-assert_file "$SKILL_DIR/references/zcode/hooks/story_hook_core.js"
+for group in 'AGENTS\.md\.tmpl' 'story-agents\.ts' 'story-gates\.ts' 'story-guard\.ts'; do
+  assert_grep "$group" "$DEPLOY_PI" "Pi deployment manifest missing asset group: $group"
+done
 assert_file "$SKILL_DIR/references/antigravity/rules/oh-story.md"
 assert_file "$SKILL_DIR/references/antigravity/hooks/hooks.json"
 assert_file "$SKILL_DIR/references/antigravity/hooks/story_antigravity_hook.js"
@@ -236,30 +224,10 @@ assert_file "$SKILL_DIR/references/antigravity/hooks/story_hook_core.js"
 assert_file "$SKILL_DIR/scripts/generate-antigravity-agents.mjs"
 assert_file "$SKILL_DIR/scripts/deploy-antigravity-skills.py"
 assert_file "$SKILL_DIR/scripts/merge-antigravity-hooks.py"
-# OpenCode shares the same prose-guard core (byte-identity guarded by check-opencode-adapter.sh);
-# it deploys alongside plugin.ts as .opencode/plugins/lib/story_hook_core.js (lib/ subdir so it
-# escapes OpenCode's single-level .opencode/plugins/*.js plugin auto-discovery).
-assert_file "$SKILL_DIR/references/opencode/story_hook_core.js"
-assert_grep 'opencode/story_hook_core\.js' "$DEPLOY_OPENCODE" "deployment manifest missing OpenCode shared prose-guard core"
-assert_grep 'references/openclaw/AGENTS\.md\.tmpl' "$DEPLOY_OPENCLAW" "deployment manifest missing OpenClaw AGENTS template"
-assert_grep 'OpenClaw skills-only' "$DEPLOY_OPENCLAW" "story-setup must document OpenClaw skills-only deployment"
-assert_grep 'references/generic/AGENTS\.md\.tmpl' "$DEPLOY_GENERIC" "deployment manifest missing generic AGENTS template"
-assert_grep '通用 Web AI / 其他 Agent' "$DEPLOY_GENERIC" "story-setup must document generic Web AI deployment"
-assert_grep 'references/reasonix/AGENTS\.md\.tmpl' "$DEPLOY_REASONIX" "deployment manifest missing Reasonix AGENTS template"
-assert_grep 'Reasonix skills-only' "$DEPLOY_REASONIX" "story-setup must document Reasonix skills-only deployment"
-assert_grep '\.agents/skills → \.\./skills' "$DEPLOY_REASONIX" "Reasonix deploy must link .agents/skills to skills/"
-assert_grep 'references/zcode/AGENTS\.md\.tmpl' "$DEPLOY_ZCODE" "deployment manifest missing ZCode AGENTS template"
-assert_grep 'target_cli = zcode' "$SKILL_FILE" "story-setup must detect ZCode projects"
-assert_grep '\.zcode/config\.json' "$DEPLOY_ZCODE" "story-setup must document ZCode config merge"
-assert_grep '不部署.*\.zcode/agents|不创建.*\.zcode/agents' "$DEPLOY_ZCODE" "story-setup must document ZCode agent boundary"
-# 三条 skills-only 路径的 AGENTS 模板分别写在各自部署文件里，不能互相串用。
-for pair in "openclaw:$DEPLOY_OPENCLAW" "reasonix:$DEPLOY_REASONIX" "generic:$DEPLOY_GENERIC"; do
-  host="${pair%%:*}"; file="${pair#*:}"
-  for other in openclaw reasonix generic zcode opencode codex; do
-    [ "$other" = "$host" ] && continue
-    assert_no_grep "references/$other/AGENTS\.md\.tmpl" "$file" "deploy-$host.md must not deploy the $other AGENTS template"
-  done
-done
+assert_file "$SKILL_DIR/references/pi/AGENTS.md.tmpl"
+assert_file "$SKILL_DIR/references/pi/extensions/story-agents.ts"
+assert_file "$SKILL_DIR/references/pi/extensions/story-gates.ts"
+assert_file "$SKILL_DIR/references/pi/extensions/story-guard.ts"
 assert_grep 'references_dir' "$SKILL_FILE" "sentinel references_dir must be documented"
 assert_grep 'resolver_strategy' "$SKILL_FILE" "sentinel resolver_strategy must be documented"
 assert_grep 'target_cli' "$SKILL_FILE" "sentinel target_cli must be documented"
@@ -427,60 +395,33 @@ for setup_doc in "$SKILL_FILE" "$SKILL_DIR"/references/deploy-*.md; do
     || fail "story-setup declares a copy whose source and target are the same path ($setup_doc)"
 done
 
-# Claude Code 的 Bash 正文写入必须进入同一 pre-guard；只注册 Write/Edit 会让 cat>/tee/cp 绕过。
-python3 - "$SKILL_DIR/references/templates/settings-hooks.json" <<'PY' || fail "Claude Bash prose pre-guard is not registered"
-import json, sys
-from pathlib import Path
-hooks = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["hooks"]["PreToolUse"]
-assert any(
-    "Bash" in block.get("matcher", "").split("|")
-    and any("guard-outline-before-prose.sh" in hook.get("command", "") for hook in block.get("hooks", []))
-    for block in hooks
-)
-PY
-# v24 → v25 实际迁移：同 command 不能让旧 matcher 留存；混在旧 block 的用户 hook 要保留，且复跑幂等。
-assert_file "$CLAUDE_MERGE"
-cat > "$TMP_DIR/claude-v24.json" <<'JSON'
+# Antigravity hooks 合并测试：保留用户自定义 hook 组，只覆盖更新 oh-story，复跑幂等。
+assert_file "$ANTIGRAVITY_MERGE"
+cat > "$TMP_DIR/ag-existing.json" <<'JSON'
 {
-  "permissions": {"allow": ["Read"]},
-  "customTop": "keep",
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-outline-before-prose.sh", "timeout": 7},
-          {"type": "command", "command": "bash ./user-pre-hook.sh", "timeout": 99}
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {"matcher": "Bash", "hooks": [{"type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-outline-before-prose.sh", "timeout": 3}]}
-    ]
+  "user-custom-group": {
+    "PreToolUse": [{"command": "echo test"}]
+  },
+  "oh-story": {
+    "PreToolUse": [{"command": "echo old"}]
   }
 }
 JSON
-python3 "$CLAUDE_MERGE" --existing "$TMP_DIR/claude-v24.json" --template "$SETTINGS_FILE" --output "$TMP_DIR/claude-v25.json"
-python3 - "$TMP_DIR/claude-v25.json" <<'PY' || fail "Claude v24→v25 hook migration failed"
+python3 "$ANTIGRAVITY_MERGE" "$TMP_DIR/ag-existing.json" "$SKILL_DIR/references/antigravity/hooks/hooks.json"
+python3 - "$TMP_DIR/ag-existing.json" <<'PY' || fail "Antigravity hook merge failed"
 import json, sys
-doc=json.load(open(sys.argv[1],encoding="utf-8"))
-assert doc["permissions"] == {"allow":["Read"]} and doc["customTop"] == "keep"
-hits=[]; user=[]
-for event, blocks in doc["hooks"].items():
-    if not isinstance(blocks,list): continue
-    for block in blocks:
-        for hook in block.get("hooks",[]):
-            cmd=hook.get("command","")
-            if "guard-outline-before-prose.sh" in cmd: hits.append((event,block.get("matcher"),hook))
-            if "user-pre-hook.sh" in cmd: user.append((event,block.get("matcher"),hook))
-assert len(hits)==1, hits
-assert hits[0][0]=="PreToolUse" and hits[0][1]=="Bash|Write|Edit|MultiEdit", hits
-assert hits[0][2].get("timeout")==10, hits
-assert len(user)==1 and user[0][0]=="PreToolUse" and user[0][1]=="Write|Edit|MultiEdit", user
+doc = json.load(open(sys.argv[1], encoding="utf-8"))
+assert "user-custom-group" in doc, "user-custom-group must be preserved"
+assert doc["user-custom-group"]["PreToolUse"][0]["command"] == "echo test"
+assert "oh-story" in doc, "oh-story group must exist"
+assert doc["oh-story"]["PreToolUse"][0]["hooks"][0]["command"] == "node hooks/story_antigravity_hook.js pre-tool-use"
 PY
-python3 "$CLAUDE_MERGE" --existing "$TMP_DIR/claude-v25.json" --template "$SETTINGS_FILE" --output "$TMP_DIR/claude-v25-again.json"
-cmp -s "$TMP_DIR/claude-v25.json" "$TMP_DIR/claude-v25-again.json" \
-  || fail "Claude settings merge is not idempotent"
+python3 "$ANTIGRAVITY_MERGE" "$TMP_DIR/ag-existing.json" "$SKILL_DIR/references/antigravity/hooks/hooks.json"
+python3 - "$TMP_DIR/ag-existing.json" <<'PY' || fail "Antigravity hook merge is not idempotent"
+import json, sys
+doc = json.load(open(sys.argv[1], encoding="utf-8"))
+assert "user-custom-group" in doc and "oh-story" in doc
+PY
 
 # 项目指令合并：每个宿主一个管理块。旧版无标记文件迁移一次，作者自己的节留在块外；
 # 重跑整块替换、字节幂等；名字常见但不带 oh-story 痕迹的作者节不能被当成旧部署删掉。
@@ -492,16 +433,18 @@ from pathlib import Path
 helper, refs, root = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3])
 root.mkdir(parents=True)
 templates = {
-    "claude-code": refs / "templates/CLAUDE.md.tmpl",
-    "opencode": refs / "opencode/AGENTS.md.tmpl",
-    **{h: refs / h / "AGENTS.md.tmpl" for h in ("codex", "zcode", "openclaw", "reasonix", "generic")},
+    "pi": refs / "pi/AGENTS.md.tmpl",
 }
+if (refs / "templates/CLAUDE.md.tmpl").is_file():
+    templates["claude-code"] = refs / "templates/CLAUDE.md.tmpl"
+
 def run(host, path, name="我的书"):
     proc = subprocess.run([sys.executable, helper, "--host", host, "--template", str(templates[host]),
                            "--existing", str(path), "--output", str(path), "--project-name", name],
                           capture_output=True, text=True)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     return json.loads(proc.stdout)
+
 # 全新文件：每个宿主都能渲染出闭合的块，只替换 {项目名}，{书名} 通配原样保留。
 for host in templates:
     target = root / f"new-{host}.md"
@@ -509,61 +452,14 @@ for host in templates:
     text = target.read_text(encoding="utf-8")
     assert text.startswith(f"<!-- oh-story:{host} 开始") and f"<!-- oh-story:{host} 结束 -->" in text, host
     assert "{项目名}" not in text and "我的书" in text and "{书名}" in text, host
-# 旧版无标记的多端文件：Codex + ZCode 各迁移一次，作者节保留，退役的「协作规则」清掉。
-legacy = root / "AGENTS.md"
-legacy.write_text("""# 我的书 — 网文写作工具集（Codex）
 
-## Skill 路由表
-
-| `$story-long-write` | story-long-write |
-
-## Codex 项目约定
-
-- Codex custom agents 在 `.codex/agents/*.toml`
-
-## 我的约定
-
-- 每天写两章。
-
-## ZCode 项目约定
-
-- 写正文前必须先有对应大纲
-
-## 协作规则
-
-Agent 分工与升级路径见 `.codex/agents/*.toml` 的职责边界。
-""", encoding="utf-8")
-assert run("codex", legacy)["status"] == "migrated"
-assert run("zcode", legacy)["status"] == "migrated"
-first = legacy.read_bytes()
-text = first.decode("utf-8")
-assert text.count("## 我的约定") == 1 and "每天写两章" in text
-assert "## 协作规则" not in text
-assert text.count("<!-- oh-story:codex 开始") == 1 and text.count("<!-- oh-story:zcode 开始") == 1
-for host in ("zcode", "codex", "zcode"):
-    assert run(host, legacy)["status"] == "replaced"
-assert legacy.read_bytes() == first, "redeploy must be byte-idempotent"
 # 作者自己的同名常见节（无 oh-story 痕迹）不是旧部署：只追加块，原文一字不动。
 user = root / "user-AGENTS.md"
 original = "# 我的项目\n\n## 文件结构\n\n- docs/ 放说明\n"
 user.write_text(original, encoding="utf-8")
-assert run("generic", user)["status"] == "appended"
+assert run("pi", user)["status"] == "appended"
 merged = user.read_text(encoding="utf-8")
-assert merged.startswith(original.rstrip("\n")) and "网文写作工具集（通用 Agent / Web AI）" in merged
-# 没有 oh-story 标题行的作者文件，节名和模板相同、正文带「拆文库」「细纲」也不是旧部署。
-own = root / "own-CLAUDE.md"
-original = "# 我的小说项目\n\n## 文件结构\n\n- 拆文库/ 放我自己的拆书笔记\n- 细纲写在 notes/\n\n## 与作者协作\n\n- 先讨论再动笔\n"
-own.write_text(original, encoding="utf-8")
-report = run("claude-code", own)
-assert report["status"] == "appended" and report["removed_legacy_sections"] == [], report
-assert own.read_text(encoding="utf-8").startswith(original.rstrip("\n"))
-# 已有别的宿主的块时，块外作者写的共有节名（如「与作者协作」）不算本宿主的旧部署。
-shared = root / "shared-AGENTS.md"
-assert run("codex", shared)["status"] == "created"
-shared.write_text(shared.read_text(encoding="utf-8") + "\n## 与作者协作\n\n- 先讨论再动笔\n", encoding="utf-8")
-report = run("zcode", shared)
-assert report["status"] == "appended" and report["removed_legacy_sections"] == [], report
-assert "先讨论再动笔" in shared.read_text(encoding="utf-8")
+assert merged.startswith(original.rstrip("\n")) and "Pi / Pi Web 写作工作台" in merged
 PY
 
 # 重部署时 sentinel 的 target_cli 是权威：不认它就会每次重问，且 skills-only 三端根本无从探测。
@@ -575,15 +471,8 @@ assert_grep '你现在用的是.*要一起装上吗' "$SKILL_FILE" "story-setup 
 # 判断不出宿主时，项目里的宿主标记只是上次装给谁，不等于这次在哪个软件里。
 assert_no_grep '恰好只有一个宿主的标记就用它' "$SKILL_FILE" "story-setup must not silently treat a lone project marker as the current host"
 assert_grep '这次还是它吗' "$SKILL_FILE" "story-setup must confirm a lone project marker with the author"
-# metadata.openclaw 在 14 个 skill 上全都有，拿它判定会把 reasonix / generic 项目误认成 OpenClaw。
-assert_no_grep '中的 `metadata\.openclaw`' "$SKILL_FILE" "story-setup must not detect OpenClaw from the skills bundle it deploys itself"
-assert_grep '不作 OpenClaw 信号' "$SKILL_FILE" "story-setup must explain why metadata.openclaw is not a detection signal"
-# skills-only 三端只能靠各自 AGENTS.md 的标题行区分；SKILL.md 引用的标记必须在模板里真的存在。
-assert_grep '网文写作工具集（Reasonix）' "$SKILL_FILE" "story-setup must detect a deployed Reasonix project from AGENTS.md"
-assert_grep '网文写作工具集（通用 Agent / Web AI）' "$SKILL_FILE" "story-setup must detect a deployed generic project from AGENTS.md"
-assert_grep '网文写作工具集（Reasonix）' "$SKILL_DIR/references/reasonix/AGENTS.md.tmpl" "Reasonix AGENTS template must carry the marker story-setup detects"
-assert_grep '网文写作工具集（通用 Agent / Web AI）' "$SKILL_DIR/references/generic/AGENTS.md.tmpl" "generic AGENTS template must carry the marker story-setup detects"
-assert_grep '网文写作工具集（OpenClaw）' "$SKILL_DIR/references/openclaw/AGENTS.md.tmpl" "OpenClaw AGENTS template must carry the marker story-setup detects"
+assert_grep 'Pi / Pi Web 写作工作台' "$SKILL_DIR/references/pi/AGENTS.md.tmpl" "Pi AGENTS template must carry the marker story-setup detects"
+assert_grep 'Google Antigravity' "$SKILL_DIR/references/deploy-antigravity.md" "Antigravity deploy file must carry the marker story-setup detects"
 echo "  OK TS2 deployment manifest"
 
 # TS3 — Agent reference bundle integrity
@@ -827,7 +716,7 @@ cat > "$project_root/book/正文/第1章.md" <<'TXT'
 身高:181
 TXT
 git -C "$mono_root" add "story-project/book/正文/第1章.md"
-mono_out="$(cd "$project_root" && CLAUDE_PROJECT_DIR="$project_root" STORY_COMMIT_COMMAND='git commit -m test' bash .claude/hooks/validate-story-commit.sh 2>&1 || true)"
+mono_out="$(cd "$project_root" && CLAUDE_PROJECT_DIR="$project_root" STORY_COMMIT_COMMAND='git commit -m test' bash .claude/hooks/validate-story-commit.sh < /dev/null 2>&1 || true)"
 echo "$mono_out" | grep -q '正文硬编码角色属性' || fail "validate-story-commit missed staged files when CLAUDE_PROJECT_DIR differs from git root"
 echo "  OK TS7 commit hook self-gating"
 

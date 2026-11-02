@@ -10,9 +10,9 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 
 **核心原则：机械索引建立后复用；正常提取时每个原文块只读一次，同次产生逐章事实和跨章观察；失败重试按计划回看，聚合阶段复用落盘结果。**
 
-> Agent 兼容性：Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "chapter-extractor", ...)` 直接调度；其他端查当前运行时 agent 目录。工具缺失或 ZCode 3.3.4 时降级 solo 并记 `Fallback: project custom agents unavailable -> solo`。
+> Agent 调度：Pi / Pi Web 原生内置直接调度；Antigravity 用 `invoke_subagent`。工具缺失时降级 solo 并记 `Fallback: project custom agents unavailable -> solo`。
 >
-> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时照常检查并 spawn；同时提示作者「写作助手版本不一致，运行 /story-setup 升级」，技术备注记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；若 agent 缺失或未暴露，降级 solo。
+> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时（标记缺失、字段缺失/非整数、小于或大于 36）**照常按文件存在性检查并 spawn**；同时白话提示作者「分析助手版本不一致，运行 /story-setup 升级」，技术备注行记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；大于 36 时额外提示先更新 oh-story-claudecode，不要用本地旧版 setup 降级覆盖。只有 agent 文件缺失、或运行时不暴露 custom agent 时才降级 solo/direct，并在技术备注记 `Fallback: ... -> solo`。
 
 ## 分析边界
 
@@ -29,7 +29,7 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 
 ## 运行约定
 
-- `{PYTHON}`：依次试 `python3`、`python`、`py -3`，用第一个能运行的。`{story-long-analyze skill 根}` 是本文件所在目录，`{拆文目录}` 是 `拆文库/{书名}/`。
+- `{PYTHON}`：探测 `python3`/`python`/`py`。`{story-long-analyze skill 根}` 是本目录，`{拆文目录}` 是 `拆文库/{书名}/`。
 - 首次拆一本书时，把作者给的 TXT 存为 `{拆文目录}/原文/原文.txt`；若编码不是 UTF-8（常见为 GBK），先转成 UTF-8，否则子代理按行号读取时会乱码。
 - 全文不足 2 万字或认不出章节标题时多半是短篇，建议作者改用 `/story-short-analyze`；作者坚持或由导入调用（篇幅已在导入时定好）时照常按长篇拆。
 

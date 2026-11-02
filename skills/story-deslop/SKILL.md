@@ -15,7 +15,7 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 ## 执行边界
 
 - 未限定范围的独立去味，完整检查表达、用笔、故事三层。三层是检查对象，不按词频分轻中重；每层可以没有问题。用户明确只查词句、某段或某类问题时，尊重范围。
-- 普通去味可修表达、恢复已有承接、调整已定内容的详略；允许删除整段无功能内容，保护伏笔、因果、人物选择、情绪体验与揭露顺序。需要改变事件、动机、结果或新增成立条件时，按故事层区分设计提案和已授权重写。不能用新微动作、粗话、证据或冲突制造“真人感”。
+- 普通去味修表达、恢复承接、调详略；可删无功能段落，保护伏笔因果、人物选择与揭露顺序。改动事件、动机或结果按故事层区分提案与授权重写。不加突兀微动作、粗话制造“真人感”。
 - 文风裁决只影响表达，不改变事实与信息边界。准确直写、心理活动、带立场的叙述和有功能的停顿均可保留，不机械套 Show/Tell、句长或删减率。
 - 用户只要检测或标注时，只出诊断，不修改正文。作者只说「去AI味」「这篇太AI了」时按改稿处理：表达与用笔直接改，故事层缺口给出方案，作者授权后再改。作者报告用白话、原文位置与阅读后果，不把检测类别名、脚本字段当评价。
 - 长篇项目（书目录下有 `正文/` 与 `追踪/`）需要改变事件、关系、人物所知或结果时，即使作者已授权，也带着诊断和授权转 `/story-long-write`「修改第X章」执行，由那边备份原文并同步追踪；本流程只改表达、用笔和已有依据的承接。
@@ -75,7 +75,7 @@ node scripts/check-ai-patterns.js --check --fail-on=blocking <正文文件...>
 
 > Agent 兼容性：只检查当前运行时的 canonical 目录：Claude `.claude/agents/{agent}.md`、OpenCode `.opencode/agents/{agent}.md`、Codex `.codex/agents/{agent}.toml`、Antigravity `.agents/agents/agent-name/agent.md`（`agent-name` 为目标 agent 名），不得因其他端文件存在而误判。Claude 用 `subagent_type`，OpenCode 用 `subagent` 工具的 `agent` 参数，Codex 用同名 `agent_type`，Antigravity 用 `invoke_subagent` + `TypeName`；Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "{agent}", ...)` 直接调度（无需工作区本地目录与部署文件）。运行时未暴露 custom-agent 工具、返回未知 agent，或检测到 `.zcode/`（ZCode 3.3.4 不执行项目 custom agents）时降级 solo/direct：报告里一句白话告诉作者「这次由我直接改」，`Fallback: project custom agents unavailable -> solo` 原文只写进报告最后一行「技术备注：」。
 >
-> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时（标记缺失、字段缺失/非整数、小于或大于 36）**照常按文件存在性检查并 spawn**，同时白话提示作者「写作助手版本不一致，运行 /story-setup 升级」，技术备注行记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；若 agent 缺失或未暴露 custom agent，降级 solo 并在技术备注记 `Fallback: ... -> solo`。
+> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时（标记缺失、字段缺失/非整数、小于或大于 36）**照常按文件存在性检查并 spawn**；同时白话提示作者「写作助手版本不一致，运行 /story-setup 升级」，技术备注行记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；大于 36 时额外提示先更新 oh-story-claudecode，不要用本地旧版 setup 降级覆盖。只有 agent 文件缺失、或运行时不暴露 custom agent 时才降级 solo/direct，并在技术备注记 `Fallback: ... -> solo`。
 
 改动文件前，先把原文复制到书内 `.story/work/去味原稿/{YYYYMMDD}_{原文件名}`，Phase 4 对照它回读；作者要撤回时用它恢复。
 

@@ -10,7 +10,7 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 
 > Agent 兼容性：专业 agent 查当前端 canonical 目录；Antigravity 用 `invoke_subagent` + `TypeName`；Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "{agent}", ...)` 直接调度。运行时不暴露 custom agent 或 ZCode 3.3.4 时降级 solo 处理。
 >
-> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时照常检查并 spawn；同时提示作者「分析助手版本不一致，运行 /story-setup 升级」，技术备注记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；若 agent 缺失或未暴露，降级 solo。
+> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时（标记缺失、字段缺失/非整数、小于或大于 36）**照常按文件存在性检查并 spawn**；同时白话提示作者「分析助手版本不一致，运行 /story-setup 升级」，技术备注行记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；大于 36 时额外提示先更新 oh-story-claudecode，不要用本地旧版 setup 降级覆盖。只有 agent 文件缺失、或运行时不暴露 custom agent 时才降级 solo/direct，并在技术备注记 `Fallback: ... -> solo`。
 
 ## 名词与目录边界（全流程硬约束）
 
