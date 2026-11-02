@@ -319,9 +319,6 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-[var(--bg)] border border-[var(--border)] font-mono text-[var(--accent)] font-bold">
-              细纲 {shortStats.detailSections}/{shortStats.totalSections || "?"} 节
-            </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-[var(--bg-selected)] border border-[var(--border)] font-mono text-[var(--accent)] font-bold">
               正文 {shortStats.proseSections}/{shortStats.totalSections || "?"} 节
             </span>

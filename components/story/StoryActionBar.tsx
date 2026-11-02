@@ -263,10 +263,10 @@ export const StoryActionBar = memo(function StoryActionBar({
 
   // 高亮规则
   const isOutlinePrimary = isShort
-    ? isShortInitial || (!hasOutline && !hasProse)
+    ? isShortInitial
     : !hasOutline && !hasProse;
   const isWritePrimary = isShort
-    ? !isShortInitial && hasOutline && !hasProse
+    ? !isShortInitial && !isShortAllProseDone
     : hasOutline && !hasProse;
 
   // 零状态守卫：未初始化或未立项书籍时隐藏动作条
@@ -339,28 +339,24 @@ export const StoryActionBar = memo(function StoryActionBar({
             )}
           </div>
 
-          {/* 1. 大纲/细纲按钮 */}
-          <button
-            type="button"
-            onClick={handleOutline}
-            className={isOutlinePrimary ? primaryBtnClass : secondaryBtnClass}
-            title={
-              isShort
-                ? isShortInitial
+          {/* 1. 大纲/细纲按钮：短篇只在立项未出大纲时展示「出设定与小节粗纲」；长篇则每章展示「出第N章细纲」 */}
+          {(!isShort || isShortInitial) && (
+            <button
+              type="button"
+              onClick={handleOutline}
+              className={isOutlinePrimary ? primaryBtnClass : secondaryBtnClass}
+              title={
+                isShort
                   ? "构思短篇核心框架，生成设定.md与12列全篇粗纲表"
-                  : `修订小节大纲第${padNum}行要素${hasOutline ? "（已就绪）" : "（待推演）"}`
-                : `按 workflow-outline 推演第${padNum}章细纲${hasOutline ? "（细纲已就绪）" : "（待推演）"}`
-            }
-          >
-            <span>{isShort ? (isShortInitial ? "📐" : "📋") : "📋"}</span>
-            <span>
-              {isShort
-                ? isShortInitial
-                  ? "出设定与小节粗纲"
-                  : `修订第${padNum}节大纲`
-                : `出第${padNum}章细纲`}
-            </span>
-          </button>
+                  : `按 workflow-outline 推演第${padNum}章细纲${hasOutline ? "（细纲已就绪）" : "（待推演）"}`
+              }
+            >
+              <span>{isShort ? "📐" : "📋"}</span>
+              <span>
+                {isShort ? "出设定与小节粗纲" : `出第${padNum}章细纲`}
+              </span>
+            </button>
+          )}
 
           {/* 2. 推进正文按钮 */}
           <button

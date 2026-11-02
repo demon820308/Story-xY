@@ -615,10 +615,7 @@ function updateStoryDashboard(ctx: ExtensionContext) {
     if (total === 0) {
       statusText = `📖 短篇进度: 筹备立项中 ➔ 待出设定与小节粗纲 🎯 情绪: ${emText} | 付费点: ${paywall}`;
     } else if (prose < total) {
-      const nextTarget = info.nextDetailExists
-        ? `待写第 ${info.nextSec} 节正文`
-        : `待补第 ${info.nextSec} 节细纲`;
-      statusText = `📖 短篇进度: 已写 ${prose}/${total} 节 (细纲 ${detail}/${total}) ➔ ${nextTarget} 🎯 情绪: ${emText} | 付费点: ${paywall}`;
+      statusText = `📖 短篇进度: 已写 ${prose}/${total} 节 ➔ 待写第 ${info.nextSec} 节正文 🎯 情绪: ${emText} | 付费点: ${paywall}`;
     } else {
       statusText = `📖 短篇进度: 正文 ${prose}/${total} 节已落盘 ➔ 待全篇精修验收 🎯 情绪: ${emText} | 付费点: ${paywall}`;
     }
