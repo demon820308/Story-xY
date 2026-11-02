@@ -1,5 +1,6 @@
 ---
 name: story
+version: 1.0.0
 description: "网络小说工具箱主入口。根据用户需求自动路由到对应 skill，并可启动本地 Dashboard。触发方式：/story、$story、/story dashboard、/网文、「我想写小说」「记住我的写作习惯」「打开工作台」「检查更新」。"
 metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 ---

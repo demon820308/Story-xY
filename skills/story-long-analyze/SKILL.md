@@ -10,9 +10,9 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 
 **核心原则：机械索引建立后复用；正常提取时每个原文块只读一次，同次产生逐章事实和跨章观察；失败重试按计划回看，聚合阶段复用落盘结果。**
 
-> Agent 兼容性：Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "chapter-extractor", ...)` 直接调度，无需检查本地文件；其他端只检查当前运行时自己的 agent 目录。运行时不支持项目 agent 或找不到文件时降级 solo/direct，并报告 `Fallback: project custom agents unavailable -> solo`。ZCode 3.3.4 不提供项目 custom agents，直接按此规则降级，不扫描其他 CLI 的 agent 目录。
+> Agent 兼容性：Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "chapter-extractor", ...)` 直接调度；其他端查当前运行时 agent 目录。工具缺失或 ZCode 3.3.4 时降级 solo 并记 `Fallback: project custom agents unavailable -> solo`。
 >
-> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时（标记缺失、字段缺失/非整数、小于或大于 36）照常按文件存在性检查并 spawn，同时报告 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）` 并提示重新运行 `/story-setup` 后新开会话；大于 36 时额外提示先更新 oh-story-claudecode，不要用本地旧版 setup 降级覆盖。非 Pi 端只有 agent 文件缺失、或运行时不暴露 custom agent 时才降级 solo/direct。
+> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时照常检查并 spawn；同时提示作者「写作助手版本不一致，运行 /story-setup 升级」，技术备注记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；若 agent 缺失或未暴露，降级 solo。
 
 ## 分析边界
 

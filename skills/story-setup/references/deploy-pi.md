@@ -6,19 +6,29 @@
 
 | Source path | Target path | Owner class | Merge mode | Validation check |
 |-------------|-------------|-------------|------------|------------------|
-| `skills/story-setup/references/pi/AGENTS.md.tmpl` | `AGENTS.md` | user+managed | managed block merge | contains Pi Web story skill routing sections |
+| [skills/story-setup/references/pi/AGENTS.md.tmpl](pi/AGENTS.md.tmpl) | `AGENTS.md` | user+managed | managed block merge | contains Pi Web story skill routing sections |
+| [skills/story-setup/references/pi/agents/chapter-extractor.md](pi/agents/chapter-extractor.md) | `.pi/agents/chapter-extractor.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/agents/character-designer.md](pi/agents/character-designer.md) | `.pi/agents/character-designer.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/agents/consistency-checker.md](pi/agents/consistency-checker.md) | `.pi/agents/consistency-checker.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/agents/narrative-writer.md](pi/agents/narrative-writer.md) | `.pi/agents/narrative-writer.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/agents/story-architect.md](pi/agents/story-architect.md) | `.pi/agents/story-architect.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/agents/story-explorer.md](pi/agents/story-explorer.md) | `.pi/agents/story-explorer.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/agents/story-researcher.md](pi/agents/story-researcher.md) | `.pi/agents/story-researcher.md` | managed | overwrite | valid agent configuration |
+| [skills/story-setup/references/pi/extensions/story-agents.ts](pi/extensions/story-agents.ts) | `.pi/extensions/story-agents.ts` | managed | overwrite | valid typescript extension |
+| [skills/story-setup/references/pi/extensions/story-gates.ts](pi/extensions/story-gates.ts) | `.pi/extensions/story-gates.ts` | managed | overwrite | valid typescript extension |
+| [skills/story-setup/references/pi/extensions/story-guard.ts](pi/extensions/story-guard.ts) | `.pi/extensions/story-guard.ts` | managed | overwrite | valid typescript extension |
 
-> 注：Pi Web (Story Studio) 原生在运行时内置挂载 14 个网文技能包、7 位写手子代理配置与 `story-gates.ts` 门禁状态机。写作项目目录与用户主目录无需复制任何 `skills/`、`agents/` 或扩展代码，保证环境与项目绝对纯净。
+> 注：Pi Web (Story Studio) 原生在运行时内置挂载 14 个网文技能包、7 位写手子代理配置与 `story-gates.ts` 门禁状态机。写作项目目录与用户主目录无需复制任何 `skills/` 代码，保证环境与项目绝对纯净。
 
 ## Pi / Pi Web 部署算法
 
-Pi Web 运行在 `@agegr/pi-web` 环境中，采用**内部原生内置模式**承载工作台扩展插件与自定义子代理 profiles：
+Pi Web 运行在 `story-xy-studio` 环境中，采用**内部原生内置模式**承载工作台扩展插件与自定义子代理 profiles：
 
 1. 确认 Pi Web 宿主运行时已就绪（14 个网文技能、7 个专用子代理及门禁扩展由宿主内存服务直接提供）。
 2. 用 `skills/story-setup/references/pi/AGENTS.md.tmpl` 按 SKILL.md「项目指令合并」写入项目 `AGENTS.md`（`--host pi`）。
-3. 清理目标项目中若存在的旧版本本地残留目录（如 `<cwd>/.pi/extensions/`、`<cwd>/extensions/`、`<cwd>/skills/` 等）。
+3. 清理目标项目中若存在的旧版本本地残留目录（如 `<cwd>/extensions/`、`<cwd>/skills/` 等）。
 4. 确保目标写作工作区包含 `长篇/` 与 `短篇/` 目录（若不存在则自动创建，保证多书书架与新书立项向导即刻感知列出）。
-5. `.story-deployed` 的 `target_cli` 写入 `pi` 或多端组合；`references_dir` 写 `skills/story-setup/references/agent-references`。
+5. `.story-deployed` 的 `target_cli` 写入 `pi`；`references_dir` 写 `skills/story-setup/references/agent-references`。
 6. 安装报告提示项见下方「安装报告必须提示」。
 
 ## 验证

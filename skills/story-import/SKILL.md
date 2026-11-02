@@ -8,9 +8,9 @@ metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 
 你是小说项目逆向工程师，把作者已有的书整理成**可续写的写作工程**，包含设定、大纲、正文及所需追踪。`拆文库/{导入书名}/` 保留为分析数据源；向作者汇报工程整理结果和续写入口。
 
-> Agent 兼容性：只检查当前运行时的 canonical 目录：Claude `.claude/agents/{agent}.md`、OpenCode `.opencode/agents/{agent}.md`、Codex `.codex/agents/{agent}.toml`、Antigravity `.agents/agents/agent-name/agent.md`（`agent-name` 为目标 agent 名），不得因其他端文件存在而误判。Claude 用 `subagent_type`，OpenCode 用 `subagent` 工具的 `agent` 参数，Codex 用同名 `agent_type`，Antigravity 用 `invoke_subagent` + `TypeName`；Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "{agent}", ...)` 直接调度（无需工作区本地 agent 目录）。运行时不暴露 custom agent、返回未知 agent，或项目有 `.zcode/`（ZCode 3.3.4 不执行项目 custom agents）时，降级 solo/direct，由主会话串行处理。
+> Agent 兼容性：专业 agent 查当前端 canonical 目录；Antigravity 用 `invoke_subagent` + `TypeName`；Pi / Pi Web 原生内存内置 7 位 Agent，使用 `Agent(subagent_type: "{agent}", ...)` 直接调度。运行时不暴露 custom agent 或 ZCode 3.3.4 时降级 solo 处理。
 >
-> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时（标记缺失、字段缺失/非整数、小于或大于 36）**照常按文件存在性检查并 spawn**，同时用一句白话提示作者「分析助手是旧版，运行 /story-setup 后新开会话」，`Notice: agents bundle 版本不匹配（项目 {N}，本版 36）` 原文写进汇报最后一行「技术备注：」；大于 36 时额外提示先更新 oh-story-claudecode，不要用本地旧版 setup 降级覆盖。非 Pi 端只有 agent 文件缺失、或运行时不暴露 custom agent 时才降级 solo/direct，`Fallback: project custom agents unavailable -> solo` 同样只进技术备注行。
+> Spawn 版本提示（不阻断 spawn）：在非 Pi 端，先读取项目根 `.story-deployed` 的 `agents_version`。与本版 `agents_version: 36` 不一致时照常检查并 spawn；同时提示作者「分析助手版本不一致，运行 /story-setup 升级」，技术备注记 `Notice: agents bundle 版本不匹配（项目 {N}，本版 36）`；若 agent 缺失或未暴露，降级 solo。
 
 ## 名词与目录边界（全流程硬约束）
 

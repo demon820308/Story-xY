@@ -31,14 +31,8 @@
 | `check-agent-notes.py` + `test-agent-notes.py` | `.agents/notes/` 决策笔记的目录布局（状态/分类/日期文件名）、`Status` 与目录一致、必需小节（Problem / Decision 或 Proposal / Alternatives considered / Consequences）、禁止手工索引；test 用临时目录逐类违规回归 | CI；新增或移动笔记后 |
 | `check-author-reports.py` | `<!-- author-report -->` 标记的作者报告模板里不许出现工程黑话：内部字段/状态名、脚本名、flag、snake/kebab 标识符、S1–S4、Gate、裸编号；块尾一行「技术备注：」豁免；登记文件（含长篇规划/单章/日更/大修模板）的报告块不得少于登记数量；`--self-test` 自带正反例 | CI；改报告模板后 |
 | `check-plugin-packaging.py` | Claude/ZCode 两个 catalog 与两个原生 manifest 的单 bundle 身份、版本、默认组件发现和 14 个根 Skills | CI；改 plugin packaging 后 |
-| `check-claude-adapter.sh` | Claude marketplace、根 plugin manifest 与 14 个 skill 自动发现；可选真实 CLI 生命周期 | CI（静态）；`CLAUDE_REAL_CHECK=1`（真实 CLI） |
-| `check-opencode-adapter.sh` | OpenCode 2.x 适配层同步 + commands/agents 结构 + 生成权限的 2.x 裁决矩阵 + plugin 行为回归 | CI + sync CI（调 sync-opencode.py） |
-| `check-openclaw-skills.sh` | OpenClaw AgentSkills/frontmatter 兼容性 | CI |
-| `check-codex-adapter.sh` | Codex 适配层：repo skills symlink、agent TOML、hooks 与跨平台 launcher | CI（调 generate-codex-agents.py 验生成确定性） |
 | `test-agent-permissions.py` | 工具白名单、禁止优先、空列表/继承和不支持声明回归；`--opencode` 用真实 OpenCode 2.x + mock 模型验证每个 agent 实际拿到的工具与允许/拒绝执行 | CI；CLI compatibility 跑真实 OpenCode |
 | `check-antigravity-adapter.sh` | Antigravity 2.0 适配层：项目 Skills、生成 Agents、Always-On Rule、named-group Hooks 与行为回归 | CI（调 generator、merge 与 hook tests） |
-| `check-zcode-adapter.sh` | ZCode plugin/marketplace、Skills/Commands/Hooks 与部署锚点 | CI |
-| `check-reasonix-adapter.sh` | Reasonix plugin manifest（schema、13 Skills、版本与 skills/story/VERSION 同步） | CI |
 
 `python scripts/test-style-precedence.py` 验证书级表达豁免在深扫、标点整理、写后和下一章门禁中一致生效，且不跨书、不豁免同一行其他问题或结构错误。
 
@@ -60,21 +54,16 @@
 | `test-storyctl.py` | `visible_chars_v1`、双层区间与作者范围、「字数目标」两端解析一致、章节检查状态与去味豁免、提交记录与 demo 同口径证据 | Linux / Windows / macOS CI |
 | `test-chapter-completion-lifecycle.py` | 公开 CLI 的 checkpoint、正常提交、欠长接受、超长单次压缩区间、blocking quality 阻断与下一章继续 | Linux / Windows / macOS CI |
 | `test-author-memory-commit.py` | 工作区作者记忆行为：单事件回执、交写手的行 ≤2KB 且漏项全数列出、证据候选、冲突替代、撤回、失败零写入、旧修订、幂等重放与派生修复 | CI |
-| `test-codex-hooks.sh` | Codex hook 合成 stdin/stdout 契约 | CI |
 | `test-static-check.py` | 真 frontmatter block、精确路径/锚点、跨 Skill 引用、fence、死 reference、Agent 与章节链接 fixture | CI |
 | `test-current-skill-contracts.py` | current-contract manifest 类型/固定值与主产物 fail-fast 语义 fixture | CI |
 | `test-handoff-contracts.py` | 拆文/扫榜产物与下游读取方的交接契约：拆文报告小节、黄金三章深度拆解字段、情绪模块卡门禁字段、节奏表列名、短篇节点字段、题材取值与 `_meta.json` 键、扫榜目标平台；导入卷纲与短篇设定过写作端的取段器和构思检查、写作端平台到审稿平台表、派助手的 prompt 字段、去味检测类别索引与写手任务标签；含反向自检（故意改坏输入必须报错） | CI |
 | `test-plugin-packaging.py` | 执行公开 packaging CLI，在临时仓库中变异 catalog/manifest/版本/组件过滤并断言结构化失败 | CI |
-| `test-claude-plugin-lifecycle.py` | 隔离 HOME 后用真实 Claude CLI 演练 14 个旧身份迁移为单 bundle、更新/卸载及无关插件保留 | `CLAUDE_REAL_CHECK=1`，由 `check-claude-adapter.sh` 调用 |
 | `test-shared-assets.py` | 共享资产 manifest 的 drift、sync、路径越界、basename 单一 owner 与未登记重复检测 | CI |
 | `test-shared-references.py` | reference manifest 的别名、目录组、drift/sync、未登记副本与 Agent 消费链回归 | CI |
 | `test-normalize-punctuation.js` | 标点归一化的只读检查、frontmatter/fence、CRLF、引号模式与幂等性 | CI |
 | `test-scan-runtime.js` | CDP argv 边界/报错/JSON 契约与 7 个 scraper 无副作用 import；七猫、起点书库翻页（名次跨页、去重、空页停止、部分失败、参数校验）与起点反爬字体解码 | CI |
 | `test-scan-aggregate.py` | 扫榜聚合 `aggregate-rank.js`：七个平台采集格式与手动榜单的题材/热度口径/字数分桶/标签解析、同书跨榜去重、采集问题上浮、样本不足标注、抽样取回原文、跳过非榜单文件、700 条级输入压到五分之一以下、没有热度的书库新书不拖掉平台热度口径 | Linux / Windows / macOS CI |
 | `test-scan-runtime-policy.py` | 变异验证 scan/browser 静态策略不会被无关或死代码关键词骗过 | CI；改 `check-scan-runtime-policy.sh` 后 |
-| `test-opencode-plugin.mjs` | 以 2.x `setup(ctx)` 直接执行 OpenCode TypeScript plugin，验大纲守卫、Shell 绕过、写后检查、compaction 注入与 `ctx.location` 定位 | 被 `check-opencode-adapter.sh` 调用 |
-| `test-codex-cli-e2e.sh` | 隔离 HOME 后用真实 Codex CLI 检查 repo 14 个 skill 的发现结果 | CLI compatibility CI；需已安装 `codex` |
-| `test-zcode-hooks.sh` | ZCode 严格 JSON Hook、正文守卫与连续性回归 | CI |
 | `test-antigravity-hooks.mjs` | Antigravity 实际注册命令的 shell/字面 argv 兼容性（空格与中文项目路径）、Hook I/O、正文守卫、artifact 桥接与 Stop 单次续跑 | CI（Linux/Windows/macOS） |
 | `test-antigravity-hook-merge.py` | `.agents/hooks.json` 顶层 `oh-story` 管理组替换、用户组保留与幂等回归 | 被 `check-antigravity-adapter.sh` 调用 |
 | `test-antigravity-skills-deploy.py` | Antigravity 14 个已知 Skill 原子物化、未知 Skill 保留、symlink fail-closed/显式迁移与防穿透写回归 | 被 `check-antigravity-adapter.sh` 调用 |
@@ -82,17 +71,12 @@
 | `test-hook-encoding-portable.sh` | 部署 hook 在 Windows 中文系统的编码健壮性 | CI |
 | `test-long-analyze-runtime.py` | 长篇拆文索引、旧成果直接使用/增强/续跑路由、旧章号与楔子对齐、无重叠原文块、批次提交与恢复、关系图中文字体回退 | CI；改 story-long-analyze 运行时后 |
 | `test-inspiration-index.py` | 三层灵感库索引：EM 卡登记幂等、专名泄漏拦截、NM/CBA 闭包与计数、卡内路径引用拒绝、标签检索 | CI；改 inspiration_index.py 或灵感库契约后 |
-| `test-opencode-cli-e2e.sh` | 真实 OpenCode 2.x CLI e2e：repo skills 发现 / 13 commands / 7 agents / 插件 active，并用 mock 模型在后台服务上验证写正文拦截、写后兜底与 compaction 注入 | CLI compatibility CI；需已安装 OpenCode 2.x（`@opencode/cli`） |
-| `opencode-mock-llm.mjs` | OpenAI 兼容 mock 模型：按剧本文件发出工具调用并记录请求，供上面两个真实 OpenCode 测试驱动运行时 | 被 `test-opencode-cli-e2e.sh`、`test-agent-permissions.py --opencode` 调用 |
 | `test-skill-numbering.sh` | Step 重排级联安全、锚点 fail-closed、代码块引用、验证零写入/提交回滚、dry-run/write/幂等性 | Linux / Windows Git Bash / macOS CI |
 
 ## 代码生成 / 同步
 
 | 脚本 | 干什么 | 何时跑 |
 |---|---|---|
-| `sync-opencode.py` | 从 Claude agent 模板 + `CLAUDE.md.tmpl` 生成 `opencode/agents/` 与 `AGENTS.md.tmpl`；`--check` 只读验同步 | 改 agent 模板后手动跑；sync CI + 被 check-opencode-adapter 调 |
-| `generate-codex-agents.py` | 从 Claude agent 模板生成 Codex `.toml` agents | 改 agent 模板后手动跑；被 check-codex-adapter 调验确定性 |
-| `generate-codex-hooks.py` | 从 6 个 event 清单生成 `hooks.json`，POSIX/Windows 共用 launcher 负责解释器探测 | 改 Codex hook 注册后；被 check-codex-adapter 调验确定性 |
 | `skills/story-setup/scripts/generate-antigravity-agents.mjs` | 从 Claude agent 真源生成 Antigravity `.agents/agents/agent-name/agent.md`（`agent-name` 为实际名称），转换官方工具名、模型档、reference root 与调用术语 | story-setup 部署时 + 被 check-antigravity-adapter 调验 |
 | `skills/story-setup/scripts/merge-antigravity-hooks.py` | 原子替换 `.agents/hooks.json` 的 `oh-story` named group，保留所有用户 groups | story-setup 部署时 + merge 回归 |
 | `skills/story-setup/scripts/deploy-antigravity-skills.py` | 把 14 个 oh-story Skills 物化为项目 `.agents/skills` 真实目录；只替换已知名、保留用户 Skill，symlink 需显式迁移且不穿透写目标 | story-setup 部署时 + materialization 回归 |

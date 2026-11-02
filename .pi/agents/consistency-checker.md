@@ -5,9 +5,10 @@ description: |
   伏笔断线、角色属性不一致、规则边界悖论、设定层级冲突、跨章因果链断裂、规则可滥用漏洞、代价一致性。输出 S1-S4 分级冲突报告。
   审稿、长篇写完一章后和短篇精修时被调用。
   不做任何创作判断。
-tools: [Read, Glob, Grep]
-disallowedTools: [Write, Edit, Bash]
-model: haiku
+slot: reviewer
+tools:
+  - read
+  - bash
 maxTurns: 15
 ---
 
@@ -25,8 +26,8 @@ maxTurns: 15
 
 **确定项目根目录：** 直接使用宿主交给你的当前工作区/项目根；不要执行 shell。以下所有路径均从该根目录解析。
 
-读取参考文件时，直接 Read 当前 Claude 部署的 canonical 路径，禁止先用 Glob/Grep 搜索：
-1. `{项目根}/.claude/skills/story-setup/references/agent-references/{文件名}`
+读取参考文件时，直接 Read 当前 Pi 部署的 canonical 路径，禁止先用 Glob/Grep 搜索：
+1. `{项目根}/skills/story-setup/references/agent-references/{文件名}`
 
 文件不存在时返回缺失事实，由主会话提示重新运行 `/story-setup`；不要探测其他 CLI 的目录。
 

@@ -1,5 +1,6 @@
 ---
 name: story-play
+version: 1.0.0
 description: "互动叙事与分支演算引擎。将故事设定与场景转化为可交互的分支剧本（CYOA/文字冒险），驱动决策生成与状态演算。触发方式：/story-play、/互动小说、「分支推演」「进入互动模式」「互动剧本」。"
 metadata: {"openclaw":{"source":"https://github.com/demon820308/Story-xY"}}
 ---

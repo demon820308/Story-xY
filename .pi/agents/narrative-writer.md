@@ -5,11 +5,13 @@ description: |
   情绪弧线执行、开篇/收尾、三层去AI味（表达、叙事用笔、故事因果与变化）。
   写长篇章节、日更、改章和短篇正文时被调用。
   也可执行完整去AI味流程和格式合规检查。
-tools: [Read, Glob, Grep, Write, Edit, Bash]
-# Bash 只跑书级自查脚本；字数与句长不自测，落盘后由主会话 chapter check 测定。
-model: opus
+slot: writer
+tools:
+  - read
+  - bash
+  - edit
+  - write
 maxTurns: 30
-# 不预加载 story-deslop / story-review（后者会嵌套 spawn）：审查任务按下表读三层方法。
 ---
 
 # Narrative Writer -- 叙事写手
@@ -42,8 +44,8 @@ maxTurns: 30
 
 **确定项目根目录：** 直接使用宿主交给你的当前工作区/项目根；不要为此执行 shell。以下所有路径均从该根目录解析。
 
-读取参考文件时，直接 Read 当前 Claude 部署的 canonical 路径，禁止先用 Glob/Grep 搜索：
-1. `{项目根}/.claude/skills/story-setup/references/agent-references/{文件名}`
+读取参考文件时，直接 Read 当前 Pi 部署的 canonical 路径，禁止先用 Glob/Grep 搜索：
+1. `{项目根}/skills/story-setup/references/agent-references/{文件名}`
 
 文件不存在时返回缺失事实，由主会话提示重新运行 `/story-setup`；不要探测其他 CLI 的目录。
 

@@ -11,20 +11,17 @@ function getCore(root?: string): any {
   if (coreInstance) return coreInstance;
   const home = process.env.USERPROFILE || process.env.HOME || "";
   const candidates = [
-    // 1. 全局用户技能目录与 hooks 目录（最高优先级保证任意工作区有效）
-    path.join(home, ".agents/skills/story-setup/references/templates/hooks/story_hook_core.js"),
-    path.join(home, ".agents/hooks/story_hook_core.js"),
-    path.join(home, ".pi/agent/skills/story-setup/references/templates/hooks/story_hook_core.js"),
+    // 1. 相对本扩展自身的相对路径
+    path.resolve(__dirname, "../../skills/story-setup/references/templates/hooks/story_hook_core.js"),
+    path.resolve(__dirname, "../skills/story-setup/references/templates/hooks/story_hook_core.js"),
+    path.resolve(__dirname, "../../.agents/hooks/story_hook_core.js"),
     // 2. 当前工作区相对路径
     root ? path.join(root, "skills/story-setup/references/templates/hooks/story_hook_core.js") : null,
     root ? path.join(root, ".agents/hooks/story_hook_core.js") : null,
-    // 3. 相对本扩展目录
-    path.resolve(__dirname, "../../skills/story-setup/references/templates/hooks/story_hook_core.js"),
-    path.resolve(__dirname, "../../.agents/hooks/story_hook_core.js"),
-    // 4. 开发源码与回退
-    "E:/story-xy/.agents/hooks/story_hook_core.js",
-    "E:/story-app/skills/story-setup/references/templates/hooks/story_hook_core.js",
-    "E:/story-xy.bak/skills/story-setup/references/templates/hooks/story_hook_core.js",
+    // 3. 用户主目录技能与 hooks 路径
+    path.join(home, ".pi/agent/skills/story-setup/references/templates/hooks/story_hook_core.js"),
+    path.join(home, ".agents/skills/story-setup/references/templates/hooks/story_hook_core.js"),
+    path.join(home, ".agents/hooks/story_hook_core.js"),
   ];
   for (const c of candidates) {
     if (c && fs.existsSync(c)) {

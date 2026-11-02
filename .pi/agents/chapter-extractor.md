@@ -3,21 +3,11 @@ name: chapter-extractor
 description: |
   连续章节块与已有成果归一专家。新内容模式一次读取一个不重叠的连续章节块，提取轻量章节事实和跨章剧情点；已有成果模式只读取旧拆文结果做二次提取，严禁回读原文或覆盖用户文件。
   被 story-long-analyze Stage 2 按运行计划调用；只读原文与旧成果，只写、只改调用方指定的一份批次输入文件，不碰其他文件，不做跨书比较或创作评价。
-tools: [Read, Glob, Grep, Write, Edit]
-disallowedTools: [Bash]
-model: haiku
+slot: runner
+tools:
+  - read
+  - bash
 maxTurns: 20
-# maxTurns: 20 — 覆盖自读原文、读交接、写入、四项 Grep 自查与定点 Edit 修正后再回执。
-# Write/Edit 只许落到 {拆文目录}/_analysis_cache/输入-{批次ID}.md：守卫在 story_hook_cli.js 的
-# analysis-input-guard，经本挂载点只作用于本 agent。改 tools 就同步改 matcher。
-# OpenCode 没有这个挂载点：sync-opencode.py 按守卫名把 edit 权限收窄到同一批路径。
-hooks:
-  PreToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: node "$CLAUDE_PROJECT_DIR"/.claude/hooks/story_hook_cli.js analysis-input-guard
-          timeout: 10
 ---
 
 # Chapter Extractor — 章节块与已有成果归一

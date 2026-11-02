@@ -186,7 +186,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
             title: e.name === "设定.md" ? "核心框架与人设" : "小节大纲与细纲",
             chapterNum: e.name === "设定.md" ? "设定" : "大纲",
           }))
-          .sort((a: OutlineItem, b: OutlineItem) => (a.fileName === "设定.md" ? -1 : 1));
+          .sort((a: OutlineItem) => (a.fileName === "设定.md" ? -1 : 1));
       }
       setOutlines(parsedOutlines);
     });

@@ -3,6 +3,11 @@
 import React, { memo, useState, useEffect, useMemo } from "react";
 import { useActiveBook } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import {
+  countShortOutlineSections,
+  extractShortDetailSections,
+  extractShortProseSections,
+} from "@/lib/story-short-outline";
 
 interface StoryActionBarProps {
   onInsertPrompt: (prompt: string) => void;
@@ -98,54 +103,24 @@ export const StoryActionBar = memo(function StoryActionBar({
           setShortHasOutlineFile(hasOutline);
 
           let outlineRowsCount = 0;
-          const details = new Set<number>();
+          let details = new Set<number>();
           if (hasOutline) {
             const outlineRes = await fetch(`/api/files/${encodeFilePathForApi(`${basePath}/小节大纲.md`)}?type=read`);
             if (outlineRes.ok && !isCancelled) {
               const outlineData = await outlineRes.json();
               const text = outlineData?.content || "";
-              const lines = text.split(/\r?\n/);
-              // 计算粗纲表的数据行数（排除表头和分隔线）
-              let inTable = false;
-              for (const line of lines) {
-                const tr = line.trim();
-                if (tr.startsWith("|") && tr.includes("结构段/五段功能")) {
-                  inTable = true;
-                  continue;
-                }
-                if (inTable) {
-                  if (!tr.startsWith("|")) {
-                    inTable = false;
-                  } else if (!/^\|(?:\s*:?-{3,}:?\s*\|)+$/.test(tr)) {
-                    outlineRowsCount++;
-                  }
-                }
-              }
-
-              // 扫描已存在的 ## 第N节
-              const sectionMatches = text.matchAll(/^##\s*第\s*(\d+)\s*节/gm);
-              for (const m of sectionMatches) {
-                const sec = parseInt(m[1], 10);
-                if (sec > 0) details.add(sec);
-              }
+              outlineRowsCount = countShortOutlineSections(text);
+              details = extractShortDetailSections(text);
             }
           }
 
-          const proseSecs = new Set<number>();
+          let proseSecs = new Set<number>();
           if (hasProse) {
             const proseRes = await fetch(`/api/files/${encodeFilePathForApi(`${basePath}/正文.md`)}?type=read`);
             if (proseRes.ok && !isCancelled) {
               const proseData = await proseRes.json();
               const text = proseData?.content || "";
-              const lines = text.split(/\r?\n/);
-              for (const l of lines) {
-                const tr = l.trim();
-                const m = tr.match(/^(?:###\s*)?(?:第\s*(\d+)\s*[章节]|(\d+)\.)/);
-                if (m) {
-                  const num = parseInt(m[1] || m[2], 10);
-                  if (num > 0) proseSecs.add(num);
-                }
-              }
+              proseSecs = extractShortProseSections(text);
             }
           }
 

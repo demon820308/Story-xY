@@ -1884,55 +1884,6 @@
           "budget": 18500
         },
         {
-          "label": "claude-code",
-          "files": [
-            "skills/story-setup/references/deploy-claude-code.md"
-          ],
-          "budget": 17450
-        },
-        {
-          "label": "codex",
-          "files": [
-            "skills/story-setup/references/deploy-codex.md"
-          ],
-          "budget": 16100
-        },
-        {
-          "label": "generic",
-          "files": [
-            "skills/story-setup/references/deploy-generic.md"
-          ],
-          "budget": 13650
-        },
-        {
-          "label": "openclaw",
-          "files": [
-            "skills/story-setup/references/deploy-openclaw.md"
-          ],
-          "budget": 14050
-        },
-        {
-          "label": "opencode",
-          "files": [
-            "skills/story-setup/references/deploy-opencode.md"
-          ],
-          "budget": 19900
-        },
-        {
-          "label": "reasonix",
-          "files": [
-            "skills/story-setup/references/deploy-reasonix.md"
-          ],
-          "budget": 14250
-        },
-        {
-          "label": "zcode",
-          "files": [
-            "skills/story-setup/references/deploy-zcode.md"
-          ],
-          "budget": 16500
-        },
-        {
           "label": "pi",
           "files": [
             "skills/story-setup/references/deploy-pi.md"
@@ -1940,33 +1891,12 @@
           "budget": 14000
         }
       ],
-      "why": "v0.8.2：部署按宿主拆分，入口只读当前宿主那一份。 已部署项目的 target_cli 可以是多端组合，各端部署文件在同一次调用里依次整读，登记为叠加。8 端全选最坏约 44.4K，超过 35K 上限，列入 path_ceiling.exempt：这是部署时刻、不写正文，部署文件都是机械清单，常见的 claude-code＋codex＋opencode 约 28K，4 端以内都在 35K 内。",
+      "why": "部署按宿主拆分，入口只读当前宿主那一份。",
       "stacking": {
-        "budget": 48000,
+        "budget": 20000,
         "slots": [
           [
             "antigravity"
-          ],
-          [
-            "claude-code"
-          ],
-          [
-            "codex"
-          ],
-          [
-            "generic"
-          ],
-          [
-            "openclaw"
-          ],
-          [
-            "opencode"
-          ],
-          [
-            "reasonix"
-          ],
-          [
-            "zcode"
           ],
           [
             "pi"

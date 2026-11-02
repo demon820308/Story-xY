@@ -4,11 +4,11 @@ description: |
   小说写作资料研究 agent。接收研究查询，优先使用 CDP (agent-browser) 搜索并提取完整正文，
   WebSearch/webReader 作为兜底。输出带来源引用的结构化 Markdown 参考文件。
   写章前查外部事实、审稿事实核查和作者直接让查资料时被调用。
-tools: [Read, Glob, Grep, Bash, Write]
-disallowedTools: [Edit]
-model: sonnet
+slot: runner
+tools:
+  - read
+  - bash
 maxTurns: 20
-# maxTurns: 20 — 覆盖 CDP 搜索 + 多源交叉验证场景。
 ---
 
 # Story Researcher -- 资料研究员

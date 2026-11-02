@@ -1,7 +1,49 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-// 内存书目写锁，进程崩溃自动释放，避免死锁
-const bookWriteLocks = new Set<string>();
+export interface BookWriteLockHolder {
+  toolCallId: string;
+  targetPath: string;
+}
+
+// 内存书目写锁，按 bookKey 记录当前持锁的 toolCallId，解决并发竞态
+const bookWriteHolders = new Map<string, BookWriteLockHolder>();
+
+export function checkAndAcquireBookWriteLock(
+  bookKey: string,
+  targetPath: string,
+  callId: string
+): { success: boolean; reason?: string } {
+  const normPath = targetPath.replace(/\\/g, "/");
+  const isProtected = normPath.includes("正文/") || normPath.includes("_tracking-state.json");
+  if (!isProtected) {
+    return { success: true };
+  }
+
+  const currentHolder = bookWriteHolders.get(bookKey);
+  if (currentHolder && currentHolder.toolCallId !== callId) {
+    return {
+      success: false,
+      reason: `【并发写锁拦截】当前书目正在由其他写手任务落盘 (${currentHolder.targetPath})，请等待其写入完成后再提交新章！`,
+    };
+  }
+
+  // 获取锁
+  bookWriteHolders.set(bookKey, { toolCallId: callId, targetPath });
+  return { success: true };
+}
+
+export function releaseBookWriteLock(bookKey: string, callId?: string): boolean {
+  const currentHolder = bookWriteHolders.get(bookKey);
+  if (!currentHolder) return false;
+
+  // 严格要求只有锁的持有者自身调用结束时方可解锁
+  if (callId && currentHolder.toolCallId !== callId) {
+    return false; // 他人结果不能解别人的锁
+  }
+
+  bookWriteHolders.delete(bookKey);
+  return true;
+}
 
 export interface EditorialRole {
   roleId: string;
@@ -25,17 +67,16 @@ export const EDITORIAL_ROLES: EditorialRole[] = [
  * story-agents 编辑部与子代理调度扩展
  * 职责：
  * 1. 维护 7 个定职角色与槽位映射；
- * 2. 保证单本书的正文写入排他锁（In-Memory Book Lock）；
+ * 2. 保证单本书的正文写入排他锁（按 toolCallId 安全管理持有者，防并发冲突）；
  * 3. 向工作台暴露「编辑部条」人话工作状态。
  */
 export default function (pi: ExtensionAPI) {
-  // 注册获取当前编辑部角色列表的命令
   pi.registerCommand("editorial-team", {
     description: "查看编辑部分工与当前运行角色",
     handler: async (args, ctx) => {
       const summary = EDITORIAL_ROLES.map(r => `• ${r.title}: ${r.description} (槽位: ${r.slot})`).join("\n");
       ctx.ui.notify(`编辑部 7 位成员已在岗：\n${summary}`, "info");
-    }
+    },
   });
 
   // 写入锁控制
@@ -43,24 +84,24 @@ export default function (pi: ExtensionAPI) {
     const { toolName, input } = event;
     if (toolName === "write" || toolName === "edit") {
       const targetPath = String((input as any)?.path || "");
-      if (targetPath.includes("正文/") || targetPath.includes("_tracking-state.json")) {
-        const bookKey = ctx.cwd;
-        if (bookWriteLocks.has(bookKey)) {
-          // 当前书正在被另一个写入任务占用
-          return {
-            block: true,
-            reason: `【并发写锁】当前书目正在由其他写手任务落盘，请等待本章写入完成后再提交新章！`
-          };
-        }
-        // 上锁
-        bookWriteLocks.add(bookKey);
+      const callId = String((event as any)?.toolCallId || (event as any)?.id || targetPath);
+      const bookKey = ctx.cwd || process.cwd();
+
+      const result = checkAndAcquireBookWriteLock(bookKey, targetPath, callId);
+      if (!result.success) {
+        return {
+          block: true,
+          reason: result.reason,
+        };
       }
     }
+    return undefined;
   });
 
-  // 写入结束后解锁
+  // 写入结束后只有对应持有者解锁
   pi.on("tool_result", async (event, ctx) => {
-    const bookKey = ctx.cwd;
-    bookWriteLocks.delete(bookKey);
+    const bookKey = ctx.cwd || process.cwd();
+    const callId = (event as any)?.toolCallId || (event as any)?.id;
+    releaseBookWriteLock(bookKey, callId);
   });
 }

@@ -3,6 +3,11 @@
 import React, { memo, useState, useEffect, useMemo } from "react";
 import { useActiveBook } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import {
+  countShortOutlineSections,
+  extractShortDetailSections,
+  extractShortProseSections,
+} from "@/lib/story-short-outline";
 import { FileViewer } from "../FileViewer";
 
 interface TrackingItem {
@@ -103,27 +108,9 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
           if (pw) paywall = pw[1].trim();
         }
 
-        let totalSections = 0;
-        let detailSections = 0;
-        if (outlineText) {
-          // 统计粗纲表格行数
-          const lines = outlineText.split("\n");
-          for (const line of lines) {
-            const tr = line.trim();
-            if (tr.startsWith("|") && !tr.includes("---") && !tr.includes("结构段") && !tr.includes("小节序号")) {
-              totalSections++;
-            }
-          }
-          // 统计 ## 第N节 细纲数
-          const detailMatches = outlineText.match(/^##\s*第\s*\d+\s*节/gm);
-          detailSections = detailMatches ? detailMatches.length : 0;
-        }
-
-        let proseSections = 0;
-        if (proseText) {
-          const proseMatches = proseText.match(/(?:^|\n)(?:###\s*\d+\.|\d+\.\s+[^\r\n]+|###\s*第\s*\d+\s*[章节])/g);
-          proseSections = proseMatches ? proseMatches.length : 0;
-        }
+        const totalSections = outlineText ? countShortOutlineSections(outlineText) : 0;
+        const detailSections = outlineText ? extractShortDetailSections(outlineText).size : 0;
+        const proseSections = proseText ? extractShortProseSections(proseText).size : 0;
 
         setShortStats({
           emotion,

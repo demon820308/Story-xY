@@ -15,7 +15,7 @@ export function getStoryAppRoot(): string {
 /**
  * 动态探测 Story skills 根目录（优先使用应用内内置的 skills/）
  */
-export function getStorySkillsDir(): string {
+export function getStorySkillsDir(cwd: string = process.cwd()): string {
   if (process.env.STORY_SKILLS_PATH && fs.existsSync(process.env.STORY_SKILLS_PATH)) {
     return path.resolve(process.env.STORY_SKILLS_PATH);
   }
@@ -23,8 +23,8 @@ export function getStorySkillsDir(): string {
   const appRoot = getStoryAppRoot();
   const candidates = [
     path.resolve(appRoot, "skills"),
-    path.resolve(process.cwd(), "skills"),
-    path.resolve(process.cwd(), "..", "story-xy", "skills"),
+    path.resolve(cwd, "skills"),
+    path.join(os.homedir(), ".pi", "agent", "skills"),
     path.join(os.homedir(), ".agents", "skills"),
   ];
 
@@ -40,12 +40,13 @@ export function getStorySkillsDir(): string {
 /**
  * 获取 Story Studio 内置 7 位写手子代理配置目录
  */
-export function getStoryAgentsDir(): string {
+export function getStoryAgentsDir(cwd: string = process.cwd()): string {
   const appRoot = getStoryAppRoot();
   const candidates = [
     path.resolve(appRoot, "skills", "story-setup", "references", "pi", "agents"),
-    path.resolve(process.cwd(), "skills", "story-setup", "references", "pi", "agents"),
-    path.resolve(process.cwd(), "..", "story-xy", "skills", "story-setup", "references", "pi", "agents"),
+    path.resolve(cwd, "skills", "story-setup", "references", "pi", "agents"),
+    path.resolve(appRoot, ".pi", "agents"),
+    path.resolve(cwd, ".pi", "agents"),
     path.join(os.homedir(), ".pi", "agent", "agents"),
   ];
 
@@ -61,12 +62,13 @@ export function getStoryAgentsDir(): string {
 /**
  * 获取 Story Studio 内置扩展目录 (story-gates, story-guard, story-agents)
  */
-export function getStoryExtensionsDir(): string {
+export function getStoryExtensionsDir(cwd: string = process.cwd()): string {
   const appRoot = getStoryAppRoot();
   const candidates = [
     path.resolve(appRoot, "skills", "story-setup", "references", "pi", "extensions"),
-    path.resolve(process.cwd(), "skills", "story-setup", "references", "pi", "extensions"),
-    path.resolve(process.cwd(), "..", "story-xy", "skills", "story-setup", "references", "pi", "extensions"),
+    path.resolve(cwd, "skills", "story-setup", "references", "pi", "extensions"),
+    path.resolve(appRoot, ".pi", "extensions"),
+    path.resolve(cwd, ".pi", "extensions"),
     path.join(os.homedir(), ".pi", "agent", "extensions"),
   ];
 
@@ -82,18 +84,8 @@ export function getStoryExtensionsDir(): string {
 /**
  * 动态定位特定技能下的脚本文件 (如 story-long-write/scripts/storyctl.py)
  */
-export function getStoryScriptPath(skillName: string, scriptName: string): string {
-  const skillsDir = getStorySkillsDir();
+export function getStoryScriptPath(skillName: string, scriptName: string, cwd: string = process.cwd()): string {
+  const skillsDir = getStorySkillsDir(cwd);
   const target = path.join(skillsDir, skillName, "scripts", scriptName);
-  if (fs.existsSync(target)) {
-    return target;
-  }
-
-  // Sibling fallback
-  const sibling = path.resolve(process.cwd(), "..", "story-xy", "skills", skillName, "scripts", scriptName);
-  if (fs.existsSync(sibling)) {
-    return sibling;
-  }
-
   return target;
 }

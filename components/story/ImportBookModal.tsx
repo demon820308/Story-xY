@@ -82,7 +82,7 @@ export const ImportBookModal = memo(function ImportBookModal({
               required
               value={filePath}
               onChange={(e) => setFilePath(e.target.value)}
-              placeholder="例如：E:/novels/斗破苍穹.txt 或 demo/短篇-曾将爱意私藏.txt"
+              placeholder="例如：~/novels/斗破苍穹.txt 或 demo/短篇-曾将爱意私藏.txt"
               className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] text-xs shadow-2xs font-mono"
             />
             <p className="text-[10px] text-[var(--text-dim)] mt-1">
