@@ -16,6 +16,7 @@ import { buildQuotedSelection } from "@/lib/quoted-selection";
 import { dropMentionText, splitDroppedItems, uploadFiles, type DroppedItem } from "@/lib/file-upload-client";
 import { MessageView } from "./MessageView";
 import { StorySetupCard } from "./story/StorySetupCard";
+import { buildWorkspaceInitPrompt } from "@/lib/story-prompts";
 import { MarkdownBody } from "./MarkdownBody";
 import { ChatInput, type ChatInputHandle } from "./ChatInput";
 import { ChatMinimap, useMessageRefs } from "./ChatMinimap";
@@ -1507,8 +1508,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
                 <StorySetupCard
                   workspacePath={session?.cwd || newSessionCwd || "当前工作区"}
                   onRunSetup={() => {
-                    void handleSend("运行 /story-setup，优先复用全局技能库与助手（宿主: pi），并在工作区建立「长篇/」与「短篇/」目录结构。");
-                    setIsStoryUninitialized(false);
+                    void handleSend(buildWorkspaceInitPrompt());
                   }}
                 />
               </div>
@@ -1524,7 +1524,7 @@ export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initi
                       <span>web v{process.env.NEXT_PUBLIC_APP_VERSION ?? "0.12.2"}</span>
                       <NewSessionUpdateLink label={(version) => t("appUpdate.releaseNotes", { version })} />
                       <span aria-hidden="true">·</span>
-                      <span className="new-session-meta-pi">oh-story active</span>
+                      <span className="new-session-meta-pi">Story Studio active</span>
                     </span>
                   </div>
                 </div>

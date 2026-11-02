@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useEffect, useMemo } from "react";
+import React, { memo, useState, useEffect, useMemo, useCallback } from "react";
 import { useActiveBook } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import {
@@ -9,12 +9,26 @@ import {
   extractShortProseSections,
 } from "@/lib/story-short-outline";
 import { FileViewer } from "../FileViewer";
+import { isShortBook } from "@/lib/story-book-kind";
+import {
+  parseStructuredTrackingState,
+  type StructuredTrackingState,
+} from "@/lib/story-tracking-state";
+import { buildGenerateTrackingPrompt } from "@/lib/story-prompts";
+import {
+  KanbanIcon,
+  ContextIcon,
+  ForeshadowIcon,
+  TimelineIcon,
+  CharacterIcon,
+  DocumentIcon,
+} from "./StoryIcons";
 
 interface TrackingItem {
   fileName: string;
   fullPath: string;
   name: string;
-  icon: string;
+  typeKey: "kanban" | "context" | "foreshadow" | "timeline" | "character" | "other";
   priority: number;
 }
 
@@ -24,19 +38,37 @@ function resolveBookPath(basePath: string, relPath: string): string {
   return `${normBase}/${normRel}`;
 }
 
+function TrackingItemIcon({ typeKey, size = 13 }: { typeKey: string; size?: number }) {
+  switch (typeKey) {
+    case "kanban":
+      return <KanbanIcon size={size} />;
+    case "context":
+      return <ContextIcon size={size} />;
+    case "foreshadow":
+      return <ForeshadowIcon size={size} />;
+    case "timeline":
+      return <TimelineIcon size={size} />;
+    case "character":
+      return <CharacterIcon size={size} />;
+    default:
+      return <DocumentIcon size={size} />;
+  }
+}
+
 export const StoryTrackingPanel = memo(function StoryTrackingPanel({
   cwd,
-  isShort,
   onOpenFile,
 }: {
   cwd?: string | null;
-  isShort?: boolean;
   onOpenFile?: (filePath: string, fileName: string) => void;
 }) {
   const { activeBook } = useActiveBook(cwd);
   const [items, setItems] = useState<TrackingItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<TrackingItem | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // 长篇专属结构化指标（M35.2, A41）
+  const [longStats, setLongStats] = useState<StructuredTrackingState | null>(null);
 
   // 短篇专属进度指标
   const [shortStats, setShortStats] = useState<{
@@ -47,22 +79,14 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
     proseSections: number;
   } | null>(null);
 
-  const isActuallyShort = useMemo(() => {
-    if (isShort !== undefined) return isShort;
-    if (!activeBook) return false;
-    return (
-      activeBook.id?.startsWith("short:") ||
-      activeBook.type?.includes("短篇") ||
-      activeBook.path?.includes("/短篇/") ||
-      activeBook.path?.includes("\\短篇\\")
-    );
-  }, [isShort, activeBook]);
+  const isShort = useMemo(() => isShortBook(activeBook), [activeBook]);
 
   useEffect(() => {
     if (!activeBook || activeBook.isUninitialized) {
       setItems([]);
       setSelectedFile(null);
       setShortStats(null);
+      setLongStats(null);
       return;
     }
 
@@ -71,7 +95,7 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
 
     const basePath = activeBook.path.replace(/\\/g, "/");
 
-    if (isActuallyShort) {
+    if (isShort) {
       // 短篇模式：小节大纲.md，设定.md，以及 .story/work/已写小节摘要.md
       const outlinePath = resolveBookPath(basePath, "小节大纲.md");
       const settingPath = resolveBookPath(basePath, "设定.md");
@@ -98,7 +122,6 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
         if (isCancelled) return;
         setLoading(false);
 
-        // 解析指标
         let emotion = "待定";
         let paywall = "待定";
         if (settingText) {
@@ -126,7 +149,7 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
             fileName: "小节大纲.md",
             fullPath: outlinePath,
             name: "小节大纲与结构表",
-            icon: "📋",
+            typeKey: "kanban",
             priority: 1,
           });
         }
@@ -135,7 +158,7 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
             fileName: "已写小节摘要.md",
             fullPath: summaryPath,
             name: "已写小节摘要",
-            icon: "📝",
+            typeKey: "context",
             priority: 2,
           });
         }
@@ -153,93 +176,129 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
       };
     }
 
+    // 长篇模式：同时读取 _tracking-state.json 结构化数据与 追踪/ 目录文档
     const trackingDir = resolveBookPath(basePath, "追踪");
+    const statePath = resolveBookPath(basePath, "追踪/_tracking-state.json");
 
-    fetch(`/api/files/${encodeFilePathForApi(trackingDir)}?type=list`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((res) => {
-        if (isCancelled) return;
-        setLoading(false);
+    Promise.all([
+      fetch(`/api/files/${encodeFilePathForApi(statePath)}?type=read`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch(`/api/files/${encodeFilePathForApi(trackingDir)}?type=list`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ]).then(([stateRes, listRes]) => {
+      if (isCancelled) return;
+      setLoading(false);
 
-        const collected: TrackingItem[] = [];
-
-        if (res && Array.isArray(res.entries)) {
-          res.entries
-            .filter((e: { name?: string }) => e.name && e.name.endsWith(".md"))
-            .forEach((e: { name: string }) => {
-              const fName = e.name;
-              let icon = "📄";
-              let priority = 10;
-              const cleanName = fName.replace(/\.md$/, "");
-
-              if (fName.includes("全景看板") || fName.includes("工作台")) {
-                icon = "📊";
-                priority = 1;
-              } else if (fName.includes("上下文")) {
-                icon = "🧭";
-                priority = 2;
-              } else if (fName.includes("伏笔")) {
-                icon = "🎯";
-                priority = 3;
-              } else if (fName.includes("时线")) {
-                icon = "⏳";
-                priority = 4;
-              } else if (fName.includes("角色")) {
-                icon = "👥";
-                priority = 5;
-              }
-
-              collected.push({
-                fileName: fName,
-                fullPath: `${trackingDir}/${fName}`,
-                name: cleanName,
-                icon,
-                priority,
-              });
-            });
+      if (stateRes?.content) {
+        try {
+          const parsed = JSON.parse(stateRes.content);
+          setLongStats(parseStructuredTrackingState(parsed));
+        } catch {
+          setLongStats(null);
         }
+      } else {
+        setLongStats(null);
+      }
 
-        collected.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
-        setItems(collected);
+      const collected: TrackingItem[] = [];
 
-        if (collected.length > 0) {
-          setSelectedFile((prev) => {
-            if (prev && collected.some((i) => i.fullPath === prev.fullPath)) {
-              return prev;
+      if (listRes && Array.isArray(listRes.entries)) {
+        listRes.entries
+          .filter((e: { name?: string }) => e.name && e.name.endsWith(".md"))
+          .forEach((e: { name: string }) => {
+            const fName = e.name;
+            let typeKey: TrackingItem["typeKey"] = "other";
+            let priority = 10;
+            const cleanName = fName.replace(/\.md$/, "");
+
+            if (fName.includes("全景看板") || fName.includes("工作台")) {
+              typeKey = "kanban";
+              priority = 1;
+            } else if (fName.includes("上下文")) {
+              typeKey = "context";
+              priority = 2;
+            } else if (fName.includes("伏笔")) {
+              typeKey = "foreshadow";
+              priority = 3;
+            } else if (fName.includes("时线")) {
+              typeKey = "timeline";
+              priority = 4;
+            } else if (fName.includes("角色")) {
+              typeKey = "character";
+              priority = 5;
             }
-            return collected[0];
+
+            collected.push({
+              fileName: fName,
+              fullPath: `${trackingDir}/${fName}`,
+              name: cleanName,
+              typeKey,
+              priority,
+            });
           });
-        } else {
-          setSelectedFile(null);
-        }
-      })
-      .catch(() => {
-        if (!isCancelled) {
-          setLoading(false);
-          setItems([]);
-          setSelectedFile(null);
-        }
-      });
+      }
+
+      collected.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+      setItems(collected);
+
+      if (collected.length > 0) {
+        setSelectedFile((prev) => {
+          if (prev && collected.some((i) => i.fullPath === prev.fullPath)) {
+            return prev;
+          }
+          return collected[0];
+        });
+      } else {
+        setSelectedFile(null);
+      }
+    });
 
     return () => {
       isCancelled = true;
     };
-  }, [activeBook, isActuallyShort]);
+  }, [activeBook, isShort]);
 
-  if (!activeBook || activeBook.isUninitialized) {
+  // 点超期伏笔警示直跳伏笔文档（A41 契约）
+  const handleJumpToForeshadow = useCallback(() => {
+    const fDoc = items.find((i) => i.typeKey === "foreshadow" || i.fileName.includes("伏笔") || i.name.includes("伏笔"));
+    if (fDoc) {
+      setSelectedFile(fDoc);
+    }
+  }, [items]);
+
+  const handleGenerateTracking = () => {
+    if (!activeBook) return;
+    const prompt = buildGenerateTrackingPrompt(activeBook.title, activeBook.path);
+    window.dispatchEvent(new CustomEvent("insert-story-prompt", { detail: { prompt } }));
+  };
+
+  // 空状态
+  if (!activeBook || activeBook.isUninitialized || (items.length === 0 && !loading && !longStats)) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center select-none text-[var(--text-muted)]">
-        <div className="text-3xl mb-2">{isActuallyShort ? "📋" : "📊"}</div>
-        <div className="font-bold text-xs text-[var(--text)] serif-text mb-1">
-          {isActuallyShort ? "尚未建立短篇大纲" : "尚未建立追踪看板"}
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center select-none text-[var(--text-muted)] bg-[var(--bg)]">
+        <div className="w-12 h-12 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] mb-3 shadow-2xs">
+          <KanbanIcon size={24} />
         </div>
-        <div className="text-[11px] leading-relaxed max-w-xs">
-          {isActuallyShort ? (
-            <>当前短篇未检测到 <code className="bg-[var(--bg-panel)] px-1 py-0.5 rounded font-mono border border-[var(--border)]">小节大纲.md</code>。完成粗纲梳理后将在此查看全篇结构表与进度。</>
-          ) : (
-            <>当前工作区未检测到追踪数据。写作后将由系统自动在 <code className="bg-[var(--bg-panel)] px-1 py-0.5 rounded font-mono border border-[var(--border)]">追踪/</code> 下生成全景看板与伏笔状态。</>
-          )}
+        <div className="font-bold text-sm text-[var(--text)] serif-text mb-1.5">
+          {isShort ? "尚未建立短篇大纲与进度" : "尚未建立追踪看板"}
         </div>
+        <div className="text-xs leading-relaxed max-w-xs mb-4 text-[var(--text-dim)]">
+          {isShort
+            ? "当前短篇尚未检测到小节大纲文档。完成构思后将在此查看全篇结构节拍与推进看板。"
+            : "当前书籍尚未建立追踪数据。点击下方按钮让智能体为您初始化追踪骨架（全景看板、伏笔雷达与上下文状态）。"}
+        </div>
+        {!isShort && (
+          <button
+            type="button"
+            onClick={handleGenerateTracking}
+            className="px-4 py-1.5 text-xs font-bold rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)] hover:opacity-90 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+          >
+            <span>🪄</span>
+            <span>初始化追踪骨架</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -247,7 +306,7 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[var(--bg)] select-none">
       {/* 短篇关键指标卡片 */}
-      {isActuallyShort && shortStats && (
+      {isShort && shortStats && (
         <div className="shrink-0 p-2.5 border-b border-[var(--border)] bg-[var(--bg-hover)] flex items-center justify-between text-xs gap-3">
           <div className="flex items-center gap-4 min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0" title={shortStats.emotion}>
@@ -270,6 +329,51 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
         </div>
       )}
 
+      {/* 长篇结构化指标卡片（M35.2, A41） */}
+      {!isShort && longStats && (
+        <div className="shrink-0 p-2.5 border-b border-[var(--border)] bg-[var(--bg-hover)] text-xs flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 font-bold text-[var(--text)] serif-text">
+              <span className="text-[var(--text-muted)] font-normal text-[11px]">进度:</span>
+              <span>第 {longStats.lastChapter} 章落盘</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[var(--text-muted)] text-[11px]">伏笔:</span>
+              <span className="px-1.5 py-0.5 rounded text-[11px] bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] font-mono">
+                活跃 {longStats.activeCount}
+              </span>
+              {longStats.overdueCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleJumpToForeshadow}
+                  className="px-2 py-0.5 rounded-full text-[11px] bg-red-500/15 text-red-600 dark:text-red-400 font-bold border border-red-500/30 hover:bg-red-500/25 transition cursor-pointer flex items-center gap-1"
+                  title="点击直达伏笔状态表"
+                >
+                  <span>⚠️</span>
+                  <span>超期 {longStats.overdueCount} 条 ↗</span>
+                </button>
+              ) : (
+                <span className="text-[10px] text-[#2e7a4c] dark:text-[#4ade80] font-medium">
+                  无超期
+                </span>
+              )}
+            </div>
+          </div>
+
+          {(longStats.latestSummary || longStats.recentCharacterState) && (
+            <div
+              className="text-[11px] text-[var(--text-dim)] truncate max-w-[280px]"
+              title={longStats.latestSummary || (longStats.recentCharacterState ? `${longStats.recentCharacterState.name}: ${longStats.recentCharacterState.state}` : "")}
+            >
+              {longStats.recentCharacterState
+                ? `角色: ${longStats.recentCharacterState.name} - ${longStats.recentCharacterState.state}`
+                : longStats.latestSummary}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 顶部追踪文档切换胶囊条 */}
       <div className="shrink-0 p-2 border-b border-[var(--border)] bg-[var(--bg-panel)] flex items-center justify-between">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin text-xs flex-1">
@@ -285,15 +389,16 @@ export const StoryTrackingPanel = memo(function StoryTrackingPanel({
                     ? "bg-[var(--bg-selected)] text-[var(--accent)] border border-[var(--accent)] shadow-2xs font-bold"
                     : "bg-[var(--bg)] text-[var(--text-muted)] hover:text-[var(--text)] border border-[var(--border)] hover:bg-[var(--bg-hover)]"
                 }`}
+                title={item.name}
               >
-                <span className="text-[10px]">{item.icon}</span>
-                <span className="truncate max-w-[130px]">{item.name}</span>
+                <TrackingItemIcon typeKey={item.typeKey} size={11} />
+                <span className="truncate max-w-[160px]">{item.name}</span>
               </button>
             );
           })}
           {items.length === 0 && !loading && (
             <span className="text-[11px] text-[var(--text-dim)] py-0.5">
-              {isActuallyShort ? "暂无大纲文档" : "暂无追踪文档"}
+              {isShort ? "暂无大纲文档" : "暂无追踪文档"}
             </span>
           )}
         </div>

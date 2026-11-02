@@ -2,6 +2,7 @@
 
 import React, { useState, memo } from "react";
 import { useActiveBook, BookInfo } from "./useActiveBook";
+import { buildImportBookPrompt } from "@/lib/story-prompts";
 
 interface ImportBookModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export const ImportBookModal = memo(function ImportBookModal({
       window.dispatchEvent(
         new CustomEvent("insert-story-prompt", {
           detail: {
-            prompt: `/story-import 导入小说文件 "${cleanPath}"（目标书名：《${cleanTitle}》）：自动执行章节切分、提取轻量事实、反推人物动机链与伏笔初始状态。`,
+            prompt: buildImportBookPrompt(cleanPath, cleanTitle),
           },
         })
       );

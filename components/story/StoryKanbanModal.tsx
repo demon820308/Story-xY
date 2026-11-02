@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, memo } from "react";
 import { useActiveBook } from "./useActiveBook";
+import { buildWorkspaceInitPrompt } from "@/lib/story-prompts";
 
 export type KanbanTab = "outline" | "characters" | "relations" | "world" | "foreshadow";
 
@@ -89,7 +90,7 @@ export const StoryKanbanModal = memo(function StoryKanbanModal({
                   window.dispatchEvent(
                     new CustomEvent("insert-story-prompt", {
                       detail: {
-                        prompt: "运行 /story-setup，为当前工作区部署 oh-story 网文写作系统与契约守卫，并初始化标准工程目录。",
+                        prompt: buildWorkspaceInitPrompt(),
                         autoFocus: true,
                       },
                     })

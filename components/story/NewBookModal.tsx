@@ -2,6 +2,8 @@
 
 import React, { useState, memo } from "react";
 import { useActiveBook, BookInfo } from "./useActiveBook";
+import { encodeFilePathForApi } from "@/lib/file-paths";
+import { buildNewBookPrompt } from "@/lib/story-prompts";
 
 interface NewBookModalProps {
   isOpen: boolean;
@@ -14,38 +16,96 @@ export const NewBookModal = memo(function NewBookModal({
   onClose,
   cwd,
 }: NewBookModalProps) {
-  const { addBook } = useActiveBook(cwd);
+  const { addBook, books } = useActiveBook(cwd);
   const [title, setTitle] = useState("");
   const [bookType, setBookType] = useState<"long" | "short">("long");
-  const [genre, setGenre] = useState("军工热血");
+  const [genre, setGenre] = useState("custom");
   const [customGenre, setCustomGenre] = useState("");
   const [hook, setHook] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanTitle = title.trim();
     if (!cleanTitle) return;
 
+    if (/[\\/:*?"<>|]/.test(cleanTitle)) {
+      alert("书名不得包含 \\ / : * ? \" < > | 等路径特殊字符，请修改书名。");
+      return;
+    }
+
+    if (books.some((b) => b.fullTitle === cleanTitle)) {
+      alert(`当前工作区已存在名为《${cleanTitle}》的书籍，请更换书名。`);
+      return;
+    }
+
     const isShort = bookType === "short";
     const finalGenre = genre === "custom" ? (customGenre.trim() || "自定义题材") : genre;
     const bookRel = isShort ? `短篇/${cleanTitle}` : `长篇/${cleanTitle}`;
-    const bookPath = cwd ? `${cwd.replace(/\\/g, "/")}/${bookRel}` : `demo/${bookRel}`;
+    const normCwd = (cwd || "").replace(/\\/g, "/").replace(/\/+$/, "");
+    const bookPath = normCwd ? `${normCwd}/${bookRel}` : `demo/${bookRel}`;
+
+    setSubmitting(true);
+
+    // M21 提交时先落盘最小骨架与标记，确保磁盘为单一事实源
+    try {
+      if (normCwd) {
+        if (isShort) {
+          await fetch(`/api/files/${encodeFilePathForApi(`${bookPath}/.book-kind`)}?type=write`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: "short\n" }),
+          });
+        } else {
+          await Promise.all([
+            fetch(`/api/files/${encodeFilePathForApi(`${bookPath}/.book-kind`)}?type=write`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: "long\n" }),
+            }),
+            fetch(`/api/files/${encodeFilePathForApi(`${bookPath}/设定/.gitkeep`)}?type=write`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: "" }),
+            }),
+            fetch(`/api/files/${encodeFilePathForApi(`${bookPath}/大纲/.gitkeep`)}?type=write`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: "" }),
+            }),
+            fetch(`/api/files/${encodeFilePathForApi(`${bookPath}/正文/.gitkeep`)}?type=write`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: "" }),
+            }),
+            fetch(`/api/files/${encodeFilePathForApi(`${bookPath}/追踪/.gitkeep`)}?type=write`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: "" }),
+            }),
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to create book scaffold on disk:", err);
+    }
 
     const newBook: BookInfo = {
       id: isShort ? `short:${bookPath}` : `book:${bookPath}`,
       title: `《${cleanTitle}》`,
       fullTitle: cleanTitle,
       type: isShort ? `${finalGenre} · 短篇` : `${finalGenre} · 长篇`,
-      status: "○ 刚刚立项",
+      status: isShort ? "○ 待构思" : "○ 刚刚立项",
       statusColor: "text-[#d97706]",
-      desc: isShort ? "刚刚立项 · 待出小节大纲与成文" : "刚刚立项 · 待出第1卷卷纲与前3章细纲",
+      desc: isShort ? "骨架已建 · 待出设定与小节大纲" : "骨架已建 · 待出第1卷卷纲与前3章细纲",
       path: bookPath,
       currentChapter: isShort ? "未开始" : "待起笔",
-      words: "0 字",
+      words: "—",
       isUninitialized: false,
     };
+
     addBook(newBook);
 
     if (typeof window !== "undefined") {
@@ -54,13 +114,13 @@ export const NewBookModal = memo(function NewBookModal({
       window.dispatchEvent(
         new CustomEvent("insert-story-prompt", {
           detail: {
-            prompt: isShort
-              ? `/story-short-write 新书立项《${cleanTitle}》（题材：${finalGenre}）：核心梗：“${hook.trim() || "待推演"}”。请输出小节大纲与构思设定。`
-              : `/story-long-write 新书立项《${cleanTitle}》（题材：${finalGenre}）：核心梗：“${hook.trim() || "待推演"}”。请输出第1卷卷纲架构与前3章剧情推演计划。`,
+            prompt: buildNewBookPrompt(isShort ? "short" : "long", cleanTitle, bookRel, finalGenre, hook),
           },
         })
       );
     }
+
+    setSubmitting(false);
     onClose();
   };
 
@@ -121,12 +181,12 @@ export const NewBookModal = memo(function NewBookModal({
                 onChange={(e) => setGenre(e.target.value)}
                 className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-3 py-2 text-[var(--text)] focus:outline-none focus:border-[var(--accent)] text-xs shadow-2xs"
               >
-                <option value="军工热血">军工热血 / 军旅主旋律</option>
-                <option value="传统玄幻">传统玄幻 / 仙侠修真</option>
+                <option value="custom">✍️ 自定义题材分类...</option>
                 <option value="都市逆袭">都市逆袭 / 职场鉴宝</option>
+                <option value="传统玄幻">传统玄幻 / 仙侠修真</option>
                 <option value="科幻悬疑">科幻末日 / 规则怪谈</option>
                 <option value="言情精修">现代言情 / 追妻火葬场</option>
-                <option value="custom">✍️ 自定义分类...</option>
+                <option value="军工热血">军工热血 / 军旅主旋律</option>
               </select>
               {genre === "custom" && (
                 <input
@@ -158,15 +218,17 @@ export const NewBookModal = memo(function NewBookModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={submitting}
               className="px-4 py-2 rounded-xl bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text)] text-xs serif-text font-medium transition cursor-pointer"
             >
               取消
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)] text-xs font-bold serif-text hover:opacity-90 shadow-xs cursor-pointer transition"
+              disabled={submitting}
+              className="px-5 py-2 rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)] text-xs font-bold serif-text hover:opacity-90 shadow-xs cursor-pointer transition disabled:opacity-50"
             >
-              立即立项并存入书架
+              {submitting ? "正在创建骨架..." : "立即立项并存入书架"}
             </button>
           </div>
         </form>

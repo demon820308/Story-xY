@@ -1,8 +1,17 @@
 "use client";
 
 import React, { memo, useState, useEffect, useMemo } from "react";
-import { useActiveBook } from "./useActiveBook";
+import { useActiveBook, getBookRelPath } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import { isShortBook } from "@/lib/story-book-kind";
+import {
+  buildLongOutlinePrompt,
+  buildLongWritePrompt,
+  buildShortOutlinePrompt,
+  buildShortSectionOutlinePrompt,
+  buildShortWritePrompt,
+  buildShortRevisionPrompt,
+} from "@/lib/story-prompts";
 import {
   countShortOutlineSections,
   extractShortDetailSections,
@@ -40,22 +49,23 @@ export const StoryActionBar = memo(function StoryActionBar({
   const [shortDetailSections, setShortDetailSections] = useState<Set<number>>(new Set());
   const [shortProseSections, setShortProseSections] = useState<Set<number>>(new Set());
 
-  const isShort = useMemo(() => {
-    if (!activeBook) return false;
-    return (
-      activeBook.id?.startsWith("short:") ||
-      activeBook.type?.includes("短篇") ||
-      activeBook.path?.includes("/短篇/") ||
-      activeBook.path?.includes("\\短篇\\")
-    );
-  }, [activeBook]);
+  // M17 单一事实源判定
+  const isShort = useMemo(() => isShortBook(activeBook), [activeBook]);
+  const isSingleFileShort = useMemo(
+    () => isShort && Boolean(activeBook?.path && (activeBook.path.endsWith(".txt") || activeBook.path.endsWith(".md"))),
+    [isShort, activeBook]
+  );
+
+  // M19 切书重置手动章节选择，禁止跨书残留
+  useEffect(() => {
+    setSelectedChapter(null);
+  }, [activeBook?.id]);
 
   // 1. 从当前活跃书籍自动解析最新待写章/节号
   const autoNextChapter = useMemo(() => {
     if (!activeBook || activeBook.isUninitialized) return 1;
     if (isShort) {
       if (shortOutlineRows > 0) {
-        // 找到尚未写正文的最小节号
         for (let i = 1; i <= shortOutlineRows; i++) {
           if (!shortProseSections.has(i)) return i;
         }
@@ -135,11 +145,13 @@ export const StoryActionBar = memo(function StoryActionBar({
       fetchShortStatus();
       window.addEventListener("focus", fetchShortStatus);
       window.addEventListener("open-story-file", fetchShortStatus);
+      window.addEventListener("story-refresh", fetchShortStatus);
 
       return () => {
         isCancelled = true;
         window.removeEventListener("focus", fetchShortStatus);
         window.removeEventListener("open-story-file", fetchShortStatus);
+        window.removeEventListener("story-refresh", fetchShortStatus);
       };
     }
 
@@ -184,11 +196,13 @@ export const StoryActionBar = memo(function StoryActionBar({
 
     window.addEventListener("focus", fetchStatus);
     window.addEventListener("open-story-file", fetchStatus);
+    window.addEventListener("story-refresh", fetchStatus);
 
     return () => {
       isCancelled = true;
       window.removeEventListener("focus", fetchStatus);
       window.removeEventListener("open-story-file", fetchStatus);
+      window.removeEventListener("story-refresh", fetchStatus);
     };
   }, [activeBook, isShort]);
 
@@ -206,7 +220,6 @@ export const StoryActionBar = memo(function StoryActionBar({
     return () => window.removeEventListener("open-story-file", handler);
   }, []);
 
-  // 最终使用的章节序号
   const currentNum = typeof chapterIndex === "number"
     ? chapterIndex
     : (selectedChapter ?? autoNextChapter);
@@ -214,7 +227,7 @@ export const StoryActionBar = memo(function StoryActionBar({
   const padNum = String(currentNum).padStart(isShort ? 2 : 3, "0");
   const isSelectedManual = selectedChapter !== null && selectedChapter !== autoNextChapter;
 
-  const hasOutline = isShort ? shortDetailSections.has(currentNum) : existingOutlines.has(currentNum);
+  const hasOutline = isShort ? (shortOutlineRows >= currentNum || shortDetailSections.has(currentNum)) : existingOutlines.has(currentNum);
   const hasProse = isShort ? shortProseSections.has(currentNum) : existingChapters.has(currentNum);
 
   const primaryBtnClass =
@@ -226,40 +239,33 @@ export const StoryActionBar = memo(function StoryActionBar({
   const isShortInitial = isShort && (!shortHasSettings || !shortHasOutlineFile || shortOutlineRows === 0);
   const isShortAllProseDone = isShort && shortOutlineRows > 0 && shortProseSections.size >= shortOutlineRows;
 
+  const bookRel = useMemo(() => {
+    if (!activeBook?.path) return "";
+    return getBookRelPath(cwd || "", activeBook.path);
+  }, [activeBook, cwd]);
+
   const handleOutline = () => {
     if (isShort) {
       if (isShortInitial) {
-        onInsertPrompt(
-          `/story-short-write 为《${activeBook.fullTitle}》完成构思：输出 设定.md 与 小节大纲.md（顶部 5 列全篇粗纲表 + 首批 ## 第1-3节 逐节细纲），完成后停下待确认。`
-        );
+        onInsertPrompt(buildShortOutlinePrompt(activeBook.fullTitle, bookRel));
       } else {
-        onInsertPrompt(
-          `/story-short-write 为《${activeBook.fullTitle}》在 小节大纲.md 中补齐/细化第 ${currentNum} 节的「## 第${currentNum}节」逐节细纲（情节推进、情绪与变化、因果与信息、场景与对白），只改小节大纲不写正文。`
-        );
+        onInsertPrompt(buildShortSectionOutlinePrompt(activeBook.fullTitle, bookRel, currentNum));
       }
     } else {
-      onInsertPrompt(
-        `/story-long-write 为第${padNum}章推演细纲：梳理冲突焦点、镜头转场、登场角色与伏笔激活点。`
-      );
+      onInsertPrompt(buildLongOutlinePrompt(activeBook.fullTitle, bookRel, currentNum));
     }
   };
 
   const handleWrite = () => {
     if (isShort) {
-      onInsertPrompt(
-        `/story-short-write 依据 设定.md 与 小节大纲.md 的「## 第${currentNum}节」细纲，推进《${activeBook.fullTitle}》第 ${currentNum} 节正文写入 正文.md，执行短篇格式与去AI味自检，写完本节停下交付。`
-      );
+      onInsertPrompt(buildShortWritePrompt(activeBook.fullTitle, bookRel, currentNum));
     } else {
-      onInsertPrompt(
-        `/story-long-write 依据第${padNum}章细纲推进正文：仅撰写该单章，严格执行去AI味三层规范与门禁自检，写完提交追踪后立即停下交付，不连写后续章节。`
-      );
+      onInsertPrompt(buildLongWritePrompt(activeBook.fullTitle, bookRel, currentNum));
     }
   };
 
   const handleRevision = () => {
-    onInsertPrompt(
-      `/story-short-write 对《${activeBook.fullTitle}》执行 Phase 4 精修打磨（去AI味、事实一致性检查与交付字数验收）。`
-    );
+    onInsertPrompt(buildShortRevisionPrompt(activeBook.fullTitle, bookRel));
   };
 
   // 高亮规则
@@ -272,89 +278,120 @@ export const StoryActionBar = memo(function StoryActionBar({
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto mb-2 text-xs select-none py-1">
-      {/* 章节/小节指示与微调切换 */}
-      <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[var(--bg-panel)] border border-[var(--border)] shrink-0 font-mono text-[11px] text-[var(--text)] shadow-2xs">
-        <span className="text-[10px] text-[var(--text-muted)] serif-text font-bold">目标:</span>
-        <button
-          type="button"
-          onClick={() => setSelectedChapter(Math.max(1, currentNum - 1))}
-          className="hover:text-[var(--accent)] px-0.5 cursor-pointer text-[10px]"
-          title={isShort ? "切到上一节" : "切到上一章"}
-        >
-          ‹
-        </button>
-        <span className="font-bold text-[var(--accent)] serif-text px-0.5">
-          {isShort ? `第${padNum}节` : `第${padNum}章`}
+      {/* M19 模式与书名常驻徽章 */}
+      <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[var(--bg-panel)] border border-[var(--border)] shrink-0 font-mono text-[11px] text-[var(--text)] shadow-2xs">
+        <span className="font-bold text-[var(--text)] serif-text truncate max-w-[140px]">
+          {activeBook?.title || "《未命名》"}
         </span>
-        <button
-          type="button"
-          onClick={() => setSelectedChapter(currentNum + 1)}
-          className="hover:text-[var(--accent)] px-0.5 cursor-pointer text-[10px]"
-          title={isShort ? "切到下一节" : "切到下一章"}
+        <span
+          className={
+            isShort
+              ? "text-[var(--accent)] text-[10px] px-1 py-0.2 rounded bg-[var(--accent)]/10 serif-text font-bold"
+              : "text-[#2e7a4c] text-[10px] px-1 py-0.2 rounded bg-[#2e7a4c]/10 serif-text font-bold"
+          }
         >
-          ›
-        </button>
-        {isSelectedManual && (
-          <button
-            type="button"
-            onClick={() => setSelectedChapter(null)}
-            className="text-[9px] text-[var(--text-muted)] hover:text-[var(--accent)] serif-text cursor-pointer ml-0.5 underline"
-            title={isShort ? "重置为最新待写节" : "重置为最新待写章"}
-          >
-            最新
-          </button>
-        )}
+          {isShort ? "短篇小说" : "长篇连载"}
+        </span>
       </div>
 
-      {/* 1. 大纲/细纲按钮 */}
-      <button
-        type="button"
-        onClick={handleOutline}
-        className={isOutlinePrimary ? primaryBtnClass : secondaryBtnClass}
-        title={
-          isShort
-            ? isShortInitial
-              ? "构思短篇核心框架，生成设定.md与顶部5列粗纲表"
-              : `针对第${padNum}节在小节大纲.md补充细纲块${hasOutline ? "（细纲已就绪）" : "（待推演）"}`
-            : `针对第${padNum}章出细纲、推演镜头与节拍${hasOutline ? "（细纲已就绪）" : "（待推演）"}`
-        }
-      >
-        <span>{isShort ? (isShortInitial ? "📐" : "📋") : "📋"}</span>
-        <span>
-          {isShort
-            ? isShortInitial
-              ? "出设定与小节粗纲"
-              : `出第${padNum}节细纲`
-            : `出第${padNum}章细纲`}
-        </span>
-      </button>
-
-      {/* 2. 推进正文按钮 */}
-      <button
-        type="button"
-        onClick={handleWrite}
-        className={isWritePrimary ? primaryBtnClass : secondaryBtnClass}
-        title={
-          isShort
-            ? `依据小节细纲推进第${padNum}节正文${hasProse ? "（已成文）" : ""}`
-            : `一键执行全自动流水线：撰写第${padNum}章 + 自动三层去AI味 + 自动门禁质检${hasProse ? "（已成稿）" : ""}`
-        }
-      >
-        <span>✍️</span>
-        <span>{isShort ? `推进第${padNum}节正文` : `推进第${padNum}章正文`}</span>
-      </button>
-
-      {/* 3. 短篇专属：全篇精修验收（当全部小节已成文时优先高亮，或随时可选） */}
-      {isShort && (
+      {/* 针对单文件短篇成稿：直接给精修动作 */}
+      {isSingleFileShort ? (
         <button
           type="button"
           onClick={handleRevision}
-          className={isShortAllProseDone ? primaryBtnClass : secondaryBtnClass}
-          title="对短篇正文执行去AI味三层打磨、事实一致性与字数交付验收"
+          className={primaryBtnClass}
+          title="对单文件短篇正文执行去AI味三层打磨、事实一致性与字数交付验收"
         >
           <span>✨</span>
-          <span>全篇精修验收</span>
+          <span>执行成稿精修 (Phase 4)</span>
         </button>
+      ) : (
+        <>
+          {/* 章节/小节指示与微调切换 */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-[var(--bg-panel)] border border-[var(--border)] shrink-0 font-mono text-[11px] text-[var(--text)] shadow-2xs">
+            <span className="text-[10px] text-[var(--text-muted)] serif-text font-bold">目标:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedChapter(Math.max(1, currentNum - 1))}
+              className="hover:text-[var(--accent)] px-0.5 cursor-pointer text-[10px]"
+              title={isShort ? "切到上一节" : "切到上一章"}
+            >
+              ‹
+            </button>
+            <span className="font-bold text-[var(--accent)] serif-text px-0.5">
+              {isShort ? `第${padNum}节` : `第${padNum}章`}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedChapter(currentNum + 1)}
+              className="hover:text-[var(--accent)] px-0.5 cursor-pointer text-[10px]"
+              title={isShort ? "切到下一节" : "切到下一章"}
+            >
+              ›
+            </button>
+            {isSelectedManual && (
+              <button
+                type="button"
+                onClick={() => setSelectedChapter(null)}
+                className="text-[9px] text-[var(--text-muted)] hover:text-[var(--accent)] serif-text cursor-pointer ml-0.5 underline"
+                title={isShort ? "重置为最新待写节" : "重置为最新待写章"}
+              >
+                最新
+              </button>
+            )}
+          </div>
+
+          {/* 1. 大纲/细纲按钮 */}
+          <button
+            type="button"
+            onClick={handleOutline}
+            className={isOutlinePrimary ? primaryBtnClass : secondaryBtnClass}
+            title={
+              isShort
+                ? isShortInitial
+                  ? "构思短篇核心框架，生成设定.md与12列全篇粗纲表"
+                  : `修订小节大纲第${padNum}行要素${hasOutline ? "（已就绪）" : "（待推演）"}`
+                : `按 workflow-outline 推演第${padNum}章细纲${hasOutline ? "（细纲已就绪）" : "（待推演）"}`
+            }
+          >
+            <span>{isShort ? (isShortInitial ? "📐" : "📋") : "📋"}</span>
+            <span>
+              {isShort
+                ? isShortInitial
+                  ? "出设定与小节粗纲"
+                  : `修订第${padNum}节大纲`
+                : `出第${padNum}章细纲`}
+            </span>
+          </button>
+
+          {/* 2. 推进正文按钮 */}
+          <button
+            type="button"
+            onClick={handleWrite}
+            className={isWritePrimary ? primaryBtnClass : secondaryBtnClass}
+            title={
+              isShort
+                ? `依据设定与小节大纲推进第${padNum}节正文${hasProse ? "（已成文）" : ""}`
+                : `依据细纲推进第${padNum}章正文，执行去AI味三层规范与门禁自检${hasProse ? "（已成稿）" : ""}`
+            }
+          >
+            <span>✍️</span>
+            <span>{isShort ? `推进第${padNum}节正文` : `推进第${padNum}章正文`}</span>
+          </button>
+
+          {/* 3. 短篇专属：全篇精修验收 */}
+          {isShort && (
+            <button
+              type="button"
+              onClick={handleRevision}
+              className={isShortAllProseDone ? primaryBtnClass : secondaryBtnClass}
+              title="对短篇正文执行去AI味三层打磨、事实一致性与字数交付验收"
+            >
+              <span>✨</span>
+              <span>全篇精修验收</span>
+            </button>
+          )}
+        </>
       )}
 
       {/* 4. 看全书 */}

@@ -1,38 +1,55 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+"use client";
+
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import {
+  BookInfo as BaseBookInfo,
+  makePlaceholderBook,
+  getBookRelPath,
+  resolveActiveBookFromChain,
+  deriveShortStatus,
+} from "@/lib/story-active-book";
 
-export interface BookInfo {
-  id: string;
-  title: string;
-  fullTitle: string;
-  type: string;
-  status: string;
-  statusColor: string;
-  desc: string;
-  path: string;
-  currentChapter: string;
-  words: string;
-  coverUrl?: string;
-  isUninitialized?: boolean;
+export type BookInfo = BaseBookInfo;
+export { getBookRelPath, makePlaceholderBook };
+
+export interface ActiveBookContextValue {
+  activeBook: BookInfo;
+  books: BookInfo[];
+  demoBooks: BookInfo[];
+  selectBook: (bookIdOrTitle: string) => void;
+  addBook: (book: BookInfo) => void;
+  removeBook: (bookId: string) => void;
+  refresh: () => void;
+  loading: boolean;
 }
 
-function makePlaceholderBook(cwd: string | null | undefined): BookInfo {
-  return {
-    id: `workspace:${cwd || "none"}`,
-    title: "暂未立项书籍",
-    fullTitle: "暂未立项书籍",
-    type: "当前工作区",
-    status: "○ 待立项",
-    statusColor: "text-[#8a8e9b]",
-    desc: "点击立项新书开始创作",
-    path: cwd || "",
-    currentChapter: "待起笔",
-    words: "0 字",
-    isUninitialized: true,
-  };
+const ActiveBookContext = createContext<ActiveBookContextValue | null>(null);
+
+async function writeActiveBookRel(workspace: string, relPath: string) {
+  if (!workspace || !relPath) return;
+  try {
+    const res = await fetch(`/api/files/${encodeFilePathForApi(workspace + "/.active-book")}?type=write`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: relPath + "\n" }),
+    });
+    if (!res.ok) {
+      console.error(`Failed to write .active-book for ${relPath}: ${res.statusText}`);
+    }
+  } catch (e) {
+    console.error("Failed to write .active-book:", e);
+  }
 }
 
-export function useActiveBook(cwd: string | null | undefined) {
+function useActiveBookState(cwd: string | null | undefined): ActiveBookContextValue {
   const normCwd = useMemo(() => {
     if (!cwd) return "";
     return cwd.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -41,6 +58,7 @@ export function useActiveBook(cwd: string | null | undefined) {
   const [scannedBooks, setScannedBooks] = useState<BookInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeBookRelDisk, setActiveBookRelDisk] = useState("");
 
   // 动态扫描当前工作区的所有真实书籍
   useEffect(() => {
@@ -67,7 +85,10 @@ export function useActiveBook(cwd: string | null | undefined) {
         }
       } catch {}
 
-      // 扫描候选根目录（当前工作区 + 可能的内置 demo 目录）
+      if (!isCancelled) {
+        setActiveBookRelDisk(activeBookRel);
+      }
+
       const scanRoots = [normCwd];
       if (!normCwd.endsWith("/demo") && !normCwd.includes("/demo/")) {
         scanRoots.push(`${normCwd}/demo`);
@@ -87,7 +108,7 @@ export function useActiveBook(cwd: string | null | undefined) {
 
                   let chapterCount = 0;
                   let currentChapter = "待开篇";
-                  let words = "0 字";
+                  let words = "—";
                   let status = "○ 待起笔";
                   let statusColor = "text-[#d97706]";
                   let desc = "0 章 · 待出细纲起笔";
@@ -129,14 +150,13 @@ export function useActiveBook(cwd: string | null | undefined) {
                             status = "● 连载中";
                             statusColor = "text-[#2e7a4c]";
                             desc = `已写 ${chapterCount} 章`;
-                            words = `约 ${(chapterCount * 3000).toLocaleString()} 字`;
+                            words = "—";
                           }
                         }
                       }
                     } catch {}
                   }
 
-                  // 扫描封面图片（优先实存的封面文件）
                   let coverUrl: string | undefined;
                   try {
                     const cvRes = await fetch(`/api/files/${encodeFilePathForApi(bookPath + "/封面")}?type=list`);
@@ -152,7 +172,6 @@ export function useActiveBook(cwd: string | null | undefined) {
                     }
                   } catch {}
 
-                  // 如果同级目录有同名封面图（如 demo/封面-书名.png）
                   if (!coverUrl) {
                     try {
                       const candidateCover = `${root}/封面-${bookName}.png`;
@@ -163,7 +182,6 @@ export function useActiveBook(cwd: string | null | undefined) {
                     } catch {}
                   }
 
-                  // 过滤脚手架遗留的无正文未立项占位目录
                   const isDummyPlaceholder = (bookName === "新书" || bookName === "未命名") && chapterCount === 0;
                   if (!isDummyPlaceholder && !results.some(b => b.path === bookPath)) {
                     results.push({
@@ -218,18 +236,47 @@ export function useActiveBook(cwd: string | null | undefined) {
                     }
                   } catch {}
 
+                  let shortStatus = "○ 待起笔";
+                  let shortStatusColor = "text-[#d97706]";
+                  let shortDesc = "短篇作品";
+                  let shortWords = "—";
+
+                  if (isDir) {
+                    try {
+                      const dirRes = await fetch(`/api/files/${encodeFilePathForApi(shortPath)}?type=list`);
+                      if (dirRes.ok) {
+                        const dirData = await dirRes.json();
+                        const dirFiles = Array.isArray(dirData?.entries) ? dirData.entries : [];
+                        const hasOutline = dirFiles.some((e: { name: string }) => e.name === "小节大纲.md");
+                        const hasProse = dirFiles.some((e: { name: string }) => e.name === "正文.md");
+                        const hasRev = dirFiles.some((e: { name: string }) => e.name === ".phase4-done" || e.name === "精修.md");
+
+                        const derived = deriveShortStatus(hasOutline, hasProse, hasRev);
+                        shortStatus = derived.status;
+                        shortStatusColor = derived.statusColor;
+                        shortDesc = derived.desc;
+                        shortWords = derived.words;
+                      }
+                    } catch {}
+                  } else {
+                    shortStatus = "● 单篇成文";
+                    shortStatusColor = "text-[#0891b2]";
+                    shortDesc = "单文件短篇";
+                    shortWords = "已落盘";
+                  }
+
                   if (!results.some(b => b.path === shortPath)) {
                     results.push({
                       id: `short:${shortPath}`,
                       title: `《${shortName}》`,
                       fullTitle: shortName,
                       type: "短篇小说",
-                      status: "● 精修中",
-                      statusColor: "text-[#0891b2]",
-                      desc: "短篇作品",
+                      status: shortStatus,
+                      statusColor: shortStatusColor,
+                      desc: shortDesc,
                       path: shortPath,
                       currentChapter: "全篇",
-                      words: "短篇",
+                      words: shortWords,
                       coverUrl: shortCoverUrl,
                     });
                   }
@@ -255,12 +302,12 @@ export function useActiveBook(cwd: string | null | undefined) {
                       title: `《${shortName}》`,
                       fullTitle: shortName,
                       type: "短篇精修",
-                      status: "● 精修中",
+                      status: "● 单篇成文",
                       statusColor: "text-[#0891b2]",
                       desc: "单文件短篇",
                       path: shortPath,
                       currentChapter: "全篇",
-                      words: "短篇",
+                      words: "已落盘",
                       coverUrl: undefined,
                     });
                   }
@@ -272,13 +319,6 @@ export function useActiveBook(cwd: string | null | undefined) {
       }
 
       if (!isCancelled) {
-        if (activeBookRel) {
-          const matchedIdx = results.findIndex((b) => b.path.endsWith(activeBookRel) || b.path.includes(activeBookRel));
-          if (matchedIdx > 0) {
-            const [matched] = results.splice(matchedIdx, 1);
-            results.unshift(matched);
-          }
-        }
         setScannedBooks(results);
         setLoading(false);
       }
@@ -320,44 +360,38 @@ export function useActiveBook(cwd: string | null | undefined) {
 
   const books = scannedBooks;
   const demoBooks = useMemo(() => books.filter((b) => b.path.includes("/demo/")), [books]);
-
-  // 决定当前活跃的书籍
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
+  // M16 选书精确解析链
   const activeBook = useMemo(() => {
-    if (books.length === 0) {
-      return makePlaceholderBook(normCwd);
-    }
-
-    if (selectedBookId) {
-      const found = books.find((b) => b.id === selectedBookId || b.path === selectedBookId || b.fullTitle === selectedBookId);
-      if (found) return found;
-    }
-
-    // 尝试匹配 normCwd
-    const cwdMatch = books.find((b) => normCwd.includes(b.path) || b.path.includes(normCwd));
-    if (cwdMatch) return cwdMatch;
-
-    return books[0];
-  }, [normCwd, books, selectedBookId]);
+    return resolveActiveBookFromChain(books, selectedBookId, activeBookRelDisk, normCwd);
+  }, [books, selectedBookId, activeBookRelDisk, normCwd]);
 
   const selectBook = useCallback((bookIdOrTitle: string) => {
     setSelectedBookId(bookIdOrTitle);
     const target = books.find((b) => b.id === bookIdOrTitle || b.fullTitle === bookIdOrTitle || b.path === bookIdOrTitle);
     if (target) {
+      if (normCwd && target.path) {
+        const rel = getBookRelPath(normCwd, target.path);
+        void writeActiveBookRel(normCwd, rel);
+      }
       try {
         window.dispatchEvent(new CustomEvent("story-book-changed", { detail: target }));
       } catch {}
     }
-  }, [books]);
+  }, [books, normCwd]);
 
   const addBook = useCallback((book: BookInfo) => {
     setScannedBooks((prev) => [book, ...prev.filter((b) => b.id !== book.id)]);
     setSelectedBookId(book.id);
+    if (normCwd && book.path) {
+      const rel = getBookRelPath(normCwd, book.path);
+      void writeActiveBookRel(normCwd, rel);
+    }
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("story-book-added", { detail: book }));
     }
-  }, []);
+  }, [normCwd]);
 
   const removeBook = useCallback((bookId: string) => {
     setScannedBooks((prev) => prev.filter((b) => b.id !== bookId));
@@ -377,4 +411,21 @@ export function useActiveBook(cwd: string | null | undefined) {
     refresh,
     loading,
   };
+}
+
+export function ActiveBookProvider({
+  cwd,
+  children,
+}: {
+  cwd?: string | null;
+  children: React.ReactNode;
+}) {
+  const value = useActiveBookState(cwd);
+  return React.createElement(ActiveBookContext.Provider, { value }, children);
+}
+
+export function useActiveBook(cwd?: string | null): ActiveBookContextValue {
+  const context = useContext(ActiveBookContext);
+  const fallback = useActiveBookState(cwd);
+  return context || fallback;
 }

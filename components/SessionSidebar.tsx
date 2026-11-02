@@ -1343,19 +1343,7 @@ export function SessionSidebar({ selectedSessionId, onSelectSession, onNewSessio
     startNewSessionIn({ cwd: selectedCwd });
   }, [selectedCwd, startNewSessionIn]);
 
-  useEffect(() => {
-    const handleSwitchCwd = (e: Event) => {
-      const custom = e as CustomEvent<{ cwd: string }>;
-      if (custom.detail?.cwd) {
-        const targetCwd = custom.detail.cwd;
-        setSelectedCwd(targetCwd);
-        onCwdChange?.(targetCwd);
-        startNewSessionIn({ cwd: targetCwd });
-      }
-    };
-    window.addEventListener("story-switch-cwd", handleSwitchCwd);
-    return () => window.removeEventListener("story-switch-cwd", handleSwitchCwd);
-  }, [onCwdChange, startNewSessionIn]);
+
 
   const recentProjects = useMemo(() => getRecentProjects(allSessions), [allSessions]);
 

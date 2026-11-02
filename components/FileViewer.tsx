@@ -27,6 +27,7 @@ import { DelimitedTable } from "./DelimitedTable";
 import { isDelimitedTablePath } from "@/lib/delimited-table";
 import { FrontmatterCard } from "./FrontmatterCard";
 import { TextSelectionBubble } from "./story/TextSelectionBubble";
+import { buildDeslopPrompt, buildReviewPrompt } from "@/lib/story-prompts";
 import { parseUnifiedPatch } from "@/lib/patch";
 import type { GitFileDiffResponse } from "@/lib/git-types";
 import { useI18n } from "@/hooks/useI18n";
@@ -61,6 +62,7 @@ interface FileData {
   size: number;
   nextOffset: number;
   truncated: boolean;
+  mtime?: string;
 }
 
 const SOURCE_HIGHLIGHT_MAX_LINES = 1_000;
@@ -76,6 +78,22 @@ const FILE_CODE_STYLE: CSSProperties = {
   fontSize: 13,
   lineHeight: 1.6,
 };
+
+function formatMtime(isoString?: string): string {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    const Y = d.getFullYear();
+    const M = String(d.getMonth() + 1).padStart(2, "0");
+    const D = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${Y}-${M}-${D} ${h}:${m}`;
+  } catch {
+    return "";
+  }
+}
 
 // Prism's light theme colors <pre> with backgroundColor, its dark theme with
 // the background shorthand. The source view sets backgroundColor itself and the
@@ -1818,7 +1836,7 @@ function TextFileViewer({
             window.dispatchEvent(
               new CustomEvent("insert-story-prompt", {
                 detail: {
-                  prompt: `/story-deslop 对以下正文段落（${sel.length}字）执行三层去AI味清洗：\n"${sel}"`,
+                  prompt: buildDeslopPrompt(sel),
                 },
               })
             );
@@ -1828,7 +1846,7 @@ function TextFileViewer({
             window.dispatchEvent(
               new CustomEvent("insert-story-prompt", {
                 detail: {
-                  prompt: `/story-review 对以下手改段落核验因果与伏笔一致性：\n"${sel}"`,
+                  prompt: buildReviewPrompt(sel),
                 },
               })
             );
@@ -1866,12 +1884,33 @@ function TextFileViewer({
             className="markdown-body markdown-file-preview serif-text"
             style={{ padding: "28px 36px", fontSize: "16px", lineHeight: "1.95" }}
           >
+            <div className="story-doc-header not-prose select-none mb-6 pb-3 border-b border-[var(--border)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-bold text-sm text-[var(--text)] serif-text truncate">{getFileName(filePath)}</span>
+                <span className="text-[11px] font-mono opacity-60 truncate hidden sm:inline" title={filePath}>{getRelativeFilePath(filePath, cwd)}</span>
+              </div>
+              {data?.mtime && (
+                <div className="text-[11px] opacity-75 shrink-0 ml-2">
+                  修改于 {formatMtime(data.mtime)}
+                </div>
+              )}
+            </div>
             {frontmatter?.data && <FrontmatterCard data={frontmatter.data} />}
             <ReactMarkdown
               remarkPlugins={markdownPreviewRemarkPlugins}
               rehypePlugins={markdownPreviewRehypePlugins}
               urlTransform={onOpenFile ? markdownUrlTransform : markdownAppUrlTransform}
               components={{
+                table({ children, ...props }) {
+                  delete (props as any).node;
+                  return (
+                    <div className="story-table-wrapper">
+                      <table {...props} className="story-compact-table">
+                        {children}
+                      </table>
+                    </div>
+                  );
+                },
                 code({ className, children, ...props }) {
                   const lang = className?.replace("language-", "").toLowerCase() ?? "";
                   const raw = String(children);

@@ -1,8 +1,16 @@
 "use client";
 
 import React, { memo, useState, useEffect } from "react";
-import { useActiveBook } from "./useActiveBook";
+import { useActiveBook, getBookRelPath } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import { isShortBook } from "@/lib/story-book-kind";
+import {
+  buildWorkspaceInitPrompt,
+  buildShortOutlinePrompt,
+  buildShortLeadPrompt,
+  buildLongVolumeOutlinePrompt,
+  buildLongWritePrompt,
+} from "@/lib/story-prompts";
 
 interface StorySidebarContentProps {
   cwd?: string | null;
@@ -56,17 +64,24 @@ export const StorySidebarContent = memo(function StorySidebarContent({
     return () => window.removeEventListener("story-refresh", handleStoryRefresh);
   }, []);
 
-  // 探测当前工作区是否已完成 story-setup 部署
+  // 探测当前工作区是否已建立长篇/短篇目录结构或已有书籍
   useEffect(() => {
     if (!cwd) {
       setHasSetup(false);
       return;
     }
+    if (books.length > 0) {
+      setHasSetup(true);
+      return;
+    }
     const normCwd = cwd.replace(/\\/g, "/").replace(/\/+$/, "");
-    fetch(`/api/files/${encodeFilePathForApi(normCwd + "/.story-deployed")}?type=read`)
-      .then((r) => setHasSetup(r.ok))
+    Promise.all([
+      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/长篇")}?type=meta`),
+      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/短篇")}?type=meta`),
+    ])
+      .then(([r1, r2]) => setHasSetup(r1.ok || r2.ok))
       .catch(() => setHasSetup(false));
-  }, [cwd]);
+  }, [cwd, books]);
 
   // 动态扫描当前书目下的正文章节与各章细纲
   useEffect(() => {
@@ -91,14 +106,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
           chapterNum: "全篇",
         },
       ]);
-      setOutlines([
-        {
-          fileName: activeBook.fullTitle,
-          fullPath: basePath,
-          title: "短篇速览",
-          chapterNum: "短篇",
-        },
-      ]);
+      setOutlines([]);
       setLoading(false);
       return;
     }
@@ -290,7 +298,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                     window.dispatchEvent(
                       new CustomEvent("insert-story-prompt", {
                         detail: {
-                          prompt: "运行 /story-setup，为当前工作区部署 oh-story 网文写作系统与契约守卫，并初始化标准工程目录。",
+                          prompt: buildWorkspaceInitPrompt(),
                           autoFocus: true,
                         },
                       })
@@ -320,7 +328,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
               </span>
             </div>
 
-            {activeBook.id?.startsWith("short:") || activeBook.type?.includes("短篇") || activeBook.path?.includes("/短篇/") ? (
+            {isShortBook(activeBook) ? (
               <>
                 <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
                   短篇新书已立项！建议先构思核心框架与小节大纲，再撰写开篇正文。
@@ -330,10 +338,11 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                     type="button"
                     onClick={() => {
                       if (typeof window !== "undefined") {
+                        const rel = getBookRelPath(cwd || "", activeBook.path);
                         window.dispatchEvent(
                           new CustomEvent("insert-story-prompt", {
                             detail: {
-                              prompt: `/story-short-write 为《${activeBook.fullTitle}》完成构思：输出 设定.md 与 小节大纲.md（顶部 5 列全篇粗纲表 + 首批 ## 第1-3节 逐节细纲），完成后停下待确认。`,
+                              prompt: buildShortOutlinePrompt(activeBook.fullTitle, rel),
                               autoFocus: true,
                             },
                           })
@@ -349,10 +358,11 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                     type="button"
                     onClick={() => {
                       if (typeof window !== "undefined") {
+                        const rel = getBookRelPath(cwd || "", activeBook.path);
                         window.dispatchEvent(
                           new CustomEvent("insert-story-prompt", {
                             detail: {
-                              prompt: `/story-short-write 撰写《${activeBook.fullTitle}》导语与第1节正文：交代起因与核心冲突，执行短篇格式与去AI味规范并自检。`,
+                              prompt: buildShortLeadPrompt(activeBook.fullTitle, rel),
                               autoFocus: true,
                             },
                           })
@@ -376,10 +386,11 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                     type="button"
                     onClick={() => {
                       if (typeof window !== "undefined") {
+                        const rel = getBookRelPath(cwd || "", activeBook.path);
                         window.dispatchEvent(
                           new CustomEvent("insert-story-prompt", {
                             detail: {
-                              prompt: `/story-long-write 为《${activeBook.fullTitle}》推演第1卷卷纲：明确核心爽点与主线目标，规划前3章冲突节拍与金手指激活契机。`,
+                              prompt: buildLongVolumeOutlinePrompt(activeBook.fullTitle, rel),
                               autoFocus: true,
                             },
                           })
@@ -395,10 +406,11 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                     type="button"
                     onClick={() => {
                       if (typeof window !== "undefined") {
+                        const rel = getBookRelPath(cwd || "", activeBook.path);
                         window.dispatchEvent(
                           new CustomEvent("insert-story-prompt", {
                             detail: {
-                              prompt: `/story-long-write 撰写《${activeBook.fullTitle}》第001章正文：确立主角初始情境与核心冲突，执行去AI味三层规范并自检门禁。`,
+                              prompt: buildLongWritePrompt(activeBook.fullTitle, rel, 1),
                               autoFocus: true,
                             },
                           })

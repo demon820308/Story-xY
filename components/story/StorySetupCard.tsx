@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { encodeFilePathForApi } from "@/lib/file-paths";
+import React from "react";
 
 interface StorySetupCardProps {
   workspacePath?: string;
@@ -12,45 +11,10 @@ export function StorySetupCard({
   workspacePath = "当前工作区",
   onRunSetup,
 }: StorySetupCardProps) {
-  const [initializing, setInitializing] = useState(false);
-
   // 一键直接立项新书
   const handleOpenNewBook = () => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("open-story-new-book"));
-    }
-  };
-
-  // 毫秒级快速初始化长篇与短篇骨架目录
-  const handleQuickInitFolders = async () => {
-    if (onRunSetup) {
-      onRunSetup();
-      return;
-    }
-    setInitializing(true);
-    try {
-      const normPath = workspacePath.replace(/\\/g, "/").replace(/\/+$/, "");
-      // 创建 长篇 与 短篇 占位目录
-      await Promise.all([
-        fetch(`/api/files/${encodeFilePathForApi(normPath + "/长篇/.gitkeep")}?type=write`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: "" }),
-        }),
-        fetch(`/api/files/${encodeFilePathForApi(normPath + "/短篇/.gitkeep")}?type=write`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: "" }),
-        }),
-      ]);
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("story-refresh"));
-      }
-    } catch (e) {
-      console.error("Failed to quick init directories:", e);
-    } finally {
-      setInitializing(false);
     }
   };
 
@@ -100,14 +64,15 @@ export function StorySetupCard({
             <span>✍️</span>
             <span>立即立项第一本小说 (长篇 / 短篇)</span>
           </button>
-          <button
-            onClick={handleQuickInitFolders}
-            disabled={initializing}
-            className="w-full py-2 rounded-xl bg-[var(--bg)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-          >
-            <span>📁</span>
-            <span>{initializing ? "创建目录中..." : "快速建立「长篇/」与「短篇/」书架目录"}</span>
-          </button>
+          {onRunSetup && (
+            <button
+              onClick={onRunSetup}
+              className="w-full py-2 rounded-xl bg-[var(--bg)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <span>⚙️</span>
+              <span>运行工程目录环境初始化 (/story-setup)</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

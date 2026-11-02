@@ -14,7 +14,11 @@ import { SettingsPanel, SettingsSectionIcon } from "./SettingsPanel";
 import { StoryModals } from "./story/StoryModals";
 import { StoryWorldSettingsPanel } from "./story/StoryWorldSettingsPanel";
 import { StoryTrackingPanel } from "./story/StoryTrackingPanel";
-import { useActiveBook } from "./story/useActiveBook";
+import { useActiveBook, ActiveBookProvider } from "./story/useActiveBook";
+import { isShortBook as isShortBookKind } from "@/lib/story-book-kind";
+import { DocumentIcon, SettingIcon, KanbanIcon } from "./story/StoryIcons";
+import { parseStructuredTrackingState } from "@/lib/story-tracking-state";
+import { encodeFilePathForApi } from "@/lib/file-paths";
 import { ProjectTrustDialog, type ProjectTrustFailure } from "./ProjectTrustDialog";
 import { BranchNavigator, hasSessionBranches } from "./BranchNavigator";
 import { SystemPromptPanel } from "./SystemPromptPanel";
@@ -672,15 +676,40 @@ export function AppShell() {
   const [activeCwd, setActiveCwd] = useState<string | null>(null);
   const storyCwd = selectedSession?.cwd ?? newSessionCwd ?? activeCwd ?? undefined;
   const { activeBook } = useActiveBook(storyCwd);
-  const isShortBook = useMemo(() => {
-    if (!activeBook) return false;
-    return (
-      activeBook.id?.startsWith("short:") ||
-      activeBook.type?.includes("短篇") ||
-      activeBook.path?.includes("/短篇/") ||
-      activeBook.path?.includes("\\短篇\\")
-    );
-  }, [activeBook]);
+  const isShortBook = useMemo(() => isShortBookKind(activeBook), [activeBook]);
+  const [overdueForeshadowCount, setOverdueForeshadowCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!activeBook || isShortBook || activeBook.isUninitialized) {
+      setOverdueForeshadowCount(0);
+      return;
+    }
+    const statePath = `${activeBook.path.replace(/\\/g, "/").replace(/\/+$/, "")}/追踪/_tracking-state.json`;
+    const checkTrackingState = () => {
+      fetch(`/api/files/${encodeFilePathForApi(statePath)}?type=read`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.content) {
+            try {
+              const parsed = JSON.parse(d.content);
+              const structured = parseStructuredTrackingState(parsed);
+              setOverdueForeshadowCount(structured.overdueCount);
+            } catch {
+              setOverdueForeshadowCount(0);
+            }
+          } else {
+            setOverdueForeshadowCount(0);
+          }
+        })
+        .catch(() => setOverdueForeshadowCount(0));
+    };
+
+    checkTrackingState();
+    window.addEventListener("story-refresh", checkTrackingState);
+    return () => {
+      window.removeEventListener("story-refresh", checkTrackingState);
+    };
+  }, [activeBook, isShortBook]);
   const activeProjectKeyRef = useRef<string | null>(null);
   // True once the initial ?session= URL param has been resolved (or confirmed absent)
   const [initialSessionRestored, setInitialSessionRestored] = useState<boolean>(() => !initialSessionId);
@@ -2096,7 +2125,7 @@ export function AppShell() {
   };
 
   return (
-    <>
+    <ActiveBookProvider cwd={storyCwd}>
     <style>{`
       @keyframes session-info-pop {
         0% {
@@ -2728,44 +2757,78 @@ export function AppShell() {
           borderBottom: "1px solid var(--border)",
         }}>
           <div className="flex items-center gap-1 select-none">
+            {activeBook && !activeBook.isUninitialized && (
+              <span className="px-1.5 py-0.5 text-[10px] rounded font-semibold border border-[var(--border)] text-[var(--text-secondary,#4b5563)] dark:text-[var(--text-muted,#9ca3af)] bg-[var(--bg)] serif-text mr-0.5">
+                {isShortBook ? "短篇" : "长篇"}
+              </span>
+            )}
             <button
               type="button"
-              onClick={() => setRightPanelMode("files")}
+              onClick={() => {
+                if (rightPanelOpen && rightPanelMode === "files") {
+                  setRightPanelOpen(false);
+                } else {
+                  setRightPanelMode("files");
+                  if (!rightPanelOpen) setRightPanelOpen(true);
+                }
+              }}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 serif-text ${
                 rightPanelMode === "files"
                   ? "bg-[var(--bg-selected)] text-[var(--accent)] font-bold shadow-2xs border border-[var(--border)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"
+                  : "text-[var(--text-secondary,#374151)] dark:text-[var(--text-muted,#9ca3af)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)] border border-[var(--border)]/40 hover:border-[var(--border)]"
               }`}
               title="查看与编辑打开的文件"
             >
-              <span>📄</span>
+              <DocumentIcon size={13} />
               <span>文件查看器</span>
             </button>
             <button
               type="button"
-              onClick={() => setRightPanelMode("settings")}
+              onClick={() => {
+                if (rightPanelOpen && rightPanelMode === "settings") {
+                  setRightPanelOpen(false);
+                } else {
+                  setRightPanelMode("settings");
+                  if (!rightPanelOpen) setRightPanelOpen(true);
+                }
+              }}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 serif-text ${
                 rightPanelMode === "settings"
                   ? "bg-[var(--bg-selected)] text-[var(--accent)] font-bold shadow-2xs border border-[var(--border)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"
+                  : "text-[var(--text-secondary,#374151)] dark:text-[var(--text-muted,#9ca3af)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)] border border-[var(--border)]/40 hover:border-[var(--border)]"
               }`}
               title={isShortBook ? "查看当前短篇设定（人设速写、情绪支点、反转设计）" : "查看当前书籍设定库（角色、世界观、故事体系）"}
             >
-              <span>{isShortBook ? "🎯" : "🌐"}</span>
+              <SettingIcon size={13} />
               <span>{isShortBook ? "核心设定与人设" : "世界观与核心"}</span>
             </button>
             <button
               type="button"
-              onClick={() => setRightPanelMode("kanban")}
+              onClick={() => {
+                if (rightPanelOpen && rightPanelMode === "kanban") {
+                  setRightPanelOpen(false);
+                } else {
+                  setRightPanelMode("kanban");
+                  if (!rightPanelOpen) setRightPanelOpen(true);
+                }
+              }}
               className={`px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer flex items-center gap-1.5 serif-text ${
                 rightPanelMode === "kanban"
                   ? "bg-[var(--bg-selected)] text-[var(--accent)] font-bold shadow-2xs border border-[var(--border)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]"
+                  : "text-[var(--text-secondary,#374151)] dark:text-[var(--text-muted,#9ca3af)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)] border border-[var(--border)]/40 hover:border-[var(--border)]"
               }`}
               title={isShortBook ? "查看小节大纲看板与写作进度" : "查看全景看板与追踪状态（上下文、伏笔闭环）"}
             >
-              <span>{isShortBook ? "📋" : "📊"}</span>
+              <KanbanIcon size={13} />
               <span>{isShortBook ? "小节大纲与进度" : "追踪看板"}</span>
+              {!isShortBook && overdueForeshadowCount > 0 && (
+                <span
+                  className="px-1.5 py-0.2 rounded-full text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 font-bold border border-red-500/30 font-mono"
+                  title={`有 ${overdueForeshadowCount} 条超期伏笔`}
+                >
+                  {overdueForeshadowCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -2866,7 +2929,6 @@ export function AppShell() {
           ) : rightPanelMode === "settings" ? (
             <StoryWorldSettingsPanel
               cwd={selectedSession?.cwd ?? newSessionCwd ?? activeCwd ?? undefined}
-              isShort={isShortBook}
               onOpenFile={(fp, fn) => {
                 handleOpenFile(fp, fn);
                 setRightPanelMode("files");
@@ -2875,7 +2937,6 @@ export function AppShell() {
           ) : (
             <StoryTrackingPanel
               cwd={selectedSession?.cwd ?? newSessionCwd ?? activeCwd ?? undefined}
-              isShort={isShortBook}
               onOpenFile={(fp, fn) => {
                 handleOpenFile(fp, fn);
                 setRightPanelMode("files");
@@ -2936,6 +2997,6 @@ export function AppShell() {
         onStatus={setProjectTrust}
       />
     )}
-    </>
+    </ActiveBookProvider>
   );
 }

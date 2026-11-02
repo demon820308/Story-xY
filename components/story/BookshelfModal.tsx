@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useState, memo, useMemo, useRef, useEffect } from "react";
-import { useActiveBook, BookInfo } from "./useActiveBook";
+import { useActiveBook, BookInfo, getBookRelPath } from "./useActiveBook";
 import { uploadFiles } from "@/lib/file-upload-client";
 import { encodeFilePathForApi } from "@/lib/file-paths";
+import { buildCoverPrompt } from "@/lib/story-prompts";
 
 interface BookshelfModalProps {
   isOpen: boolean;
@@ -108,10 +109,12 @@ export const BookshelfModal = memo(function BookshelfModal({
   const handleTriggerCover = (bookTitle: string) => {
     showToast(`🎨 已调用 story-cover：为《${bookTitle}》构思并生成高质量竖版封面！`);
     if (typeof window !== "undefined") {
+      const targetBook = books.find((b) => b.fullTitle === bookTitle);
+      const relPath = targetBook ? getBookRelPath(cwd || "", targetBook.path) : undefined;
       window.dispatchEvent(
         new CustomEvent("insert-story-prompt", {
           detail: {
-            prompt: `/story-cover 为《${bookTitle}》构思并生成高质量竖版小说封面插图。`,
+            prompt: buildCoverPrompt(bookTitle, relPath),
           },
         })
       );
@@ -255,9 +258,6 @@ export const BookshelfModal = memo(function BookshelfModal({
   const handleSwitchBook = (b: BookInfo) => {
     selectBook(b.id);
     onClose();
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("story-switch-cwd", { detail: { cwd: b.path } }));
-    }
   };
 
   if (!isOpen) return null;

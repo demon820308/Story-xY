@@ -2459,6 +2459,124 @@ pre, code {
   padding: 0;
 }
 
+/* Compact Table for Story Panels & Markdown Preview (M36.1, A42) */
+.story-table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 16px 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.story-compact-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.story-compact-table th,
+.story-compact-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  word-break: break-word;
+  white-space: normal;
+  text-align: left;
+}
+.story-compact-table tr:last-child td {
+  border-bottom: none;
+}
+.story-compact-table th:last-child,
+.story-compact-table td:last-child {
+  border-right: none;
+}
+.story-compact-table th {
+  background: var(--bg-panel);
+  font-weight: 600;
+  color: var(--text);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+/* Frozen / Sticky first column */
+.story-compact-table th:first-child {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  background: var(--bg-panel);
+}
+.story-compact-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--bg);
+  font-weight: 600;
+}
+
+/* Story Reader typography & paper themes (M30, M31) */
+.story-reader-paper {
+  transition: background-color 0.2s, color 0.2s;
+}
+.story-reader-paper.theme-default {
+  background: var(--bg);
+  color: var(--text);
+}
+.story-reader-paper.theme-parchment {
+  background: #fbf7ee;
+  color: #2c2520;
+}
+html.dark .story-reader-paper.theme-parchment {
+  background: #201d1a;
+  color: #ded6cb;
+}
+.story-reader-paper.theme-dark {
+  background: #141416;
+  color: #dcdde1;
+}
+
+.story-reader-container {
+  max-width: 780px;
+  margin-inline: auto;
+  letter-spacing: 0.02em;
+}
+
+.story-chapter-title {
+  text-align: center;
+  font-size: 1.85em;
+  font-weight: 700;
+  margin: 36px 0 28px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.story-section-title {
+  text-align: center;
+  font-size: 1.15em;
+  font-weight: 700;
+  margin: 28px 0 20px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.story-scene-divider {
+  text-align: center;
+  margin: 32px 0;
+  letter-spacing: 0.4em;
+  opacity: 0.45;
+  font-size: 0.9em;
+}
+
+.story-p {
+  margin: 0 0 18px;
+  text-indent: 2em;
+  text-align: justify;
+  text-justify: inter-ideograph;
+}
+
 /* YAML frontmatter metadata card (file preview) */
 .markdown-frontmatter {
   margin-bottom: 20px;
