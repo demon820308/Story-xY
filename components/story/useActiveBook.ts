@@ -262,7 +262,7 @@ function useActiveBookState(cwd: string | null | undefined): ActiveBookContextVa
                     shortStatus = "● 单篇成文";
                     shortStatusColor = "text-[#0891b2]";
                     shortDesc = "单文件短篇";
-                    shortWords = "已落盘";
+                    shortWords = "成稿";
                   }
 
                   if (!results.some(b => b.path === shortPath)) {
@@ -307,7 +307,7 @@ function useActiveBookState(cwd: string | null | undefined): ActiveBookContextVa
                       desc: "单文件短篇",
                       path: shortPath,
                       currentChapter: "全篇",
-                      words: "已落盘",
+                      words: "成稿",
                       coverUrl: undefined,
                     });
                   }

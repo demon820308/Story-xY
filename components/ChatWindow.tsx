@@ -16,6 +16,7 @@ import { buildQuotedSelection } from "@/lib/quoted-selection";
 import { dropMentionText, splitDroppedItems, uploadFiles, type DroppedItem } from "@/lib/file-upload-client";
 import { MessageView } from "./MessageView";
 import { StorySetupCard } from "./story/StorySetupCard";
+import { useActiveBook } from "./story/useActiveBook";
 import { buildWorkspaceInitPrompt } from "@/lib/story-prompts";
 import { MarkdownBody } from "./MarkdownBody";
 import { ChatInput, type ChatInputHandle } from "./ChatInput";
@@ -252,20 +253,8 @@ function ProcessDetailsGroup({ messageCount, toolCallCount, durationMs, cacheMis
 export function ChatWindow({ session, searchTarget, onSearchTargetHandled, initialScrollPosition, onScrollPositionChange, sessionRunning, newSessionCwd, newSessionDraftKey, newSessionContextBar, initialNewSessionChoices, onNewSessionChoicesChange, onAgentEnd, onToolEnd, onAttentionNeeded, onSessionCreated, onSessionForked, modelsRefreshKey, chatInputRef, onBranchDataChange, onSystemPromptChange, onSystemToolsChange, onSystemInfoLoaderChange, onSessionStatsChange, onSessionStatsPanelOpen, onOpenSettings, onContextUsageChange, onOpenFile, onFilesUploaded, onOpenSubagent, onAskInNewChat, quoteSelectionEnabled = false, initialPrompt, onInitialPromptConsumed, soundEnabled = true, onSoundToggle, playDoneSound = () => {}, unlockAudio, holdAudio }: Props) {
   const { t } = useI18n();
   const isMobile = useIsMobile();
-  const [isStoryUninitialized, setIsStoryUninitialized] = useState(false);
-
-  useEffect(() => {
-    const handleToggle = (e: Event) => {
-      const custom = e as CustomEvent<{ uninitialized?: boolean }>;
-      if (typeof custom.detail?.uninitialized === "boolean") {
-        setIsStoryUninitialized(custom.detail.uninitialized);
-      } else {
-        setIsStoryUninitialized((prev) => !prev);
-      }
-    };
-    window.addEventListener("story-toggle-uninitialized", handleToggle);
-    return () => window.removeEventListener("story-toggle-uninitialized", handleToggle);
-  }, []);
+  const { activeBook, books } = useActiveBook(session?.cwd || newSessionCwd);
+  const isStoryUninitialized = !activeBook || activeBook.isUninitialized || books.length === 0;
   const completionNotificationsEnabled = session?.relation?.kind !== "subagent";
 
   // Wrap onAgentEnd to play the completion sound. This is more reliable than

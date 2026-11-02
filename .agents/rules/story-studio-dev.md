@@ -57,7 +57,7 @@ trigger: always_on
 3. `node scripts/run-doc-budget.js` —— 文档去空白字数预算 0 超标 0 报错
 4. `python scripts/check-agent-notes.py` —— 决策笔记结构与分类规范全 OK
 5. `python scripts/generate-pi-agents.py --check` —— Pi Agent 确定性与模板一致性全 OK
-6. `node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs` —— 核心单测全绿
+6. `node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs test/story-ui-logic.test.mjs` —— 核心单测全绿
 7. `npx tsc --noEmit` —— TypeScript 严格类型检查 0 错误
 8. `npm run lint` —— ESLint 检查 0 错误
 9. `npm run probe` —— 真实路径 5 流一键探针（Dev 服务运行下 5 流全绿）

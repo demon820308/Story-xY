@@ -46,10 +46,11 @@ export function isSceneDividerLine(line: string): boolean {
 }
 
 /**
- * 剥除段落首部的全角空格与连续半角空格，防止与 CSS text-indent: 2em 叠加为 4em
+ * 剥除段落首部的全角空格（　 / \u3000）与半角空格/制表符，
+ * 保证正文缩进纯粹由 CSS text-indent: 2em 统一负责，消除正文自带全角空格叠加产生的 4em 双重缩进 (M31.1)
  */
 export function stripLeadingIndents(text: string): string {
-  return text.replace(/^[\u3000\u0020\t]+/g, "");
+  return text.replace(/^[　 \t\u3000\u00A0]+/g, "");
 }
 
 /**

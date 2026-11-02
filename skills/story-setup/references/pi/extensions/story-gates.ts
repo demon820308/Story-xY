@@ -12,13 +12,19 @@ function getCore(root?: string): any {
   const home = process.env.USERPROFILE || process.env.HOME || "";
   const candidates = [
     // 1. 相对本扩展自身的相对路径
+    path.resolve(__dirname, "../../templates/hooks/story_hook_core.js"),
+    path.resolve(__dirname, "../templates/hooks/story_hook_core.js"),
     path.resolve(__dirname, "../../skills/story-setup/references/templates/hooks/story_hook_core.js"),
     path.resolve(__dirname, "../skills/story-setup/references/templates/hooks/story_hook_core.js"),
     path.resolve(__dirname, "../../.agents/hooks/story_hook_core.js"),
-    // 2. 当前工作区相对路径
+    path.resolve(__dirname, "../../../../.agents/hooks/story_hook_core.js"),
+    // 2. 宿主进程工作目录
+    path.resolve(process.cwd(), "skills/story-setup/references/templates/hooks/story_hook_core.js"),
+    path.resolve(process.cwd(), ".agents/hooks/story_hook_core.js"),
+    // 3. 当前小说工作区相对路径
     root ? path.join(root, "skills/story-setup/references/templates/hooks/story_hook_core.js") : null,
     root ? path.join(root, ".agents/hooks/story_hook_core.js") : null,
-    // 3. 用户主目录技能与 hooks 路径
+    // 4. 用户主目录技能与 hooks 路径
     path.join(home, ".pi/agent/skills/story-setup/references/templates/hooks/story_hook_core.js"),
     path.join(home, ".agents/skills/story-setup/references/templates/hooks/story_hook_core.js"),
     path.join(home, ".agents/hooks/story_hook_core.js"),
@@ -603,17 +609,18 @@ function updateStoryDashboard(ctx: ExtensionContext) {
     const detail = info.detailSections || 0;
     const emotion = info.emotion || "待定";
     const paywall = info.paywall || "待定";
+    const emText = emotion.length > 20 ? `${emotion.slice(0, 20)}...` : emotion;
 
     let statusText = "";
     if (total === 0) {
-      statusText = `📖 短篇进度: 筹备立项中 ➔ 待出设定与小节粗纲 🎯 情绪: ${emotion} | 付费点: ${paywall}`;
+      statusText = `📖 短篇进度: 筹备立项中 ➔ 待出设定与小节粗纲 🎯 情绪: ${emText} | 付费点: ${paywall}`;
     } else if (prose < total) {
       const nextTarget = info.nextDetailExists
         ? `待写第 ${info.nextSec} 节正文`
         : `待补第 ${info.nextSec} 节细纲`;
-      statusText = `📖 短篇进度: 已写 ${prose}/${total} 节 (细纲 ${detail}/${total}) ➔ ${nextTarget} 🎯 情绪: ${emotion} | 付费点: ${paywall}`;
+      statusText = `📖 短篇进度: 已写 ${prose}/${total} 节 (细纲 ${detail}/${total}) ➔ ${nextTarget} 🎯 情绪: ${emText} | 付费点: ${paywall}`;
     } else {
-      statusText = `📖 短篇进度: 正文 ${prose}/${total} 节已落盘 ➔ 待全篇精修验收 🎯 情绪: ${emotion} | 付费点: ${paywall}`;
+      statusText = `📖 短篇进度: 正文 ${prose}/${total} 节已落盘 ➔ 待全篇精修验收 🎯 情绪: ${emText} | 付费点: ${paywall}`;
     }
 
     ctx.ui.setStatus("00_story_label", "Story状态");

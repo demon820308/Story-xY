@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import fs from "node:fs";
+import path from "node:path";
 import { createJiti } from "jiti";
 
 const jiti = createJiti(import.meta.url, { moduleCache: false });
@@ -26,6 +28,8 @@ const {
   buildShortRevisionPrompt,
   buildGenerateSettingsPrompt,
   buildGenerateTrackingPrompt,
+  buildDeslopPrompt,
+  buildReviewPrompt,
 } = await jiti.import("../lib/story-prompts.ts");
 
 const {
@@ -37,7 +41,22 @@ const {
 } = await jiti.import("../lib/story-tracking-state.ts");
 
 const {
+  extractChapterInfo,
+  extractChapterNumber,
+  parseChineseNumber,
+} = await jiti.import("../lib/story-chapter-parser.ts");
+
+const {
+  isCommittedChapter,
+  formatSnapshotFileName,
+  applyWordCountToTrackingState,
+  computeContentFingerprint,
+  isFingerprintDrifted,
+} = await jiti.import("../lib/story-editor-governance.ts");
+
+const {
   normalizeNovelContent,
+  stripLeadingIndents,
   findInSource,
   replaceMatchInSource,
   replaceAllInSource,
@@ -196,6 +215,14 @@ test("M22: story-prompts constructors strictly conform to contracts and contain 
 
   const newBook = buildNewBookPrompt("long", "新世界", "长篇/新世界", "都市逆袭", "金手指系统");
   assert.match(newBook, /骨架已建/);
+
+  const deslopPrompt = buildDeslopPrompt("剑道独尊", "第005章");
+  assert.match(deslopPrompt, /《剑道独尊》第005章/);
+  assert.match(deslopPrompt, /\/story-deslop/);
+
+  const reviewPrompt = buildReviewPrompt("剑道独尊", "第005章");
+  assert.match(reviewPrompt, /《剑道独尊》第005章/);
+  assert.match(reviewPrompt, /\/story-review/);
 });
 
 test("A37: normalizeNovelContent strips fullwidth indents, formats chapter titles, and prevents markdown heading injection", () => {
@@ -216,6 +243,8 @@ test("A37: normalizeNovelContent strips fullwidth indents, formats chapter title
   assert.equal(resultLong.paragraphs[0].text, "第1章 军宣新星");
 
   // 段首全角空格剥除
+  assert.equal(stripLeadingIndents("　　全角段首"), "全角段首");
+  assert.equal(stripLeadingIndents("   半角段首"), "半角段首");
   assert.equal(resultLong.paragraphs[1].type, "text");
   assert.equal(resultLong.paragraphs[1].text, "“江晨同志，欢迎你加入我们文工团。”");
   assert.equal(resultLong.paragraphs[1].text.startsWith("　"), false);
@@ -354,4 +383,90 @@ test("A40: classifySettingFile maps 题材定位.md to theme and searches 25 cha
 
   const longTrackingPrompt = buildGenerateTrackingPrompt("剑道独尊");
   assert.equal(longTrackingPrompt.includes("_tracking-state.json"), true);
+});
+
+test("M26: extractChapterInfo and extractChapterNumber unify chapter parsing across roman/arabic and chinese numbers", () => {
+  assert.equal(parseChineseNumber("一"), 1);
+  assert.equal(parseChineseNumber("二十五"), 25);
+  assert.equal(parseChineseNumber("一百二十"), 120);
+
+  const ch1 = extractChapterInfo("第001章_军宣新星.md", "正文/第001章_军宣新星.md");
+  assert.equal(ch1?.chapterNum, 1);
+  assert.equal(ch1?.rawNum, "第001章");
+  assert.equal(ch1?.title, "军宣新星");
+
+  const ch2 = extractChapterInfo("第二十五章_别做成晚会.md", "正文/第二十五章_别做成晚会.md");
+  assert.equal(ch2?.chapterNum, 25);
+  assert.equal(ch2?.rawNum, "第025章");
+  assert.equal(ch2?.title, "别做成晚会");
+
+  const chShort = extractChapterInfo("正文.md", "短篇/正文.md");
+  assert.equal(chShort?.chapterNum, 1);
+  assert.equal(chShort?.rawNum, "全篇");
+
+  assert.equal(extractChapterInfo("细纲_第025章.md", "大纲/细纲_第025章.md"), null);
+  assert.equal(extractChapterNumber("第25章"), 25);
+  assert.equal(extractChapterNumber("细纲_025"), 25);
+  assert.equal(extractChapterNumber("第二十五章"), 25);
+});
+
+test("M23 & M24: story-editor-governance handles committed chapter guard, snapshot naming, wordcount syncing, and fingerprint drifting", () => {
+  // 1. 定稿判定：<= last_committed_chapter
+  assert.equal(isCommittedChapter(25, 25), true);
+  assert.equal(isCommittedChapter(1, 25), true);
+  assert.equal(isCommittedChapter(26, 25), false);
+  assert.equal(isCommittedChapter(0, 25), false);
+
+  // 2. 快照文件名生成
+  const snapshotName = formatSnapshotFileName(25, "第025章", new Date(2026, 10, 2, 17, 0, 0));
+  assert.equal(snapshotName, "第025章-20261102-170000.md");
+
+  // 3. 字数回写与总字数联动
+  const mockState = {
+    book_title: "测试书籍",
+    last_committed_chapter: 25,
+    wordcount_records: {
+      "24": { actual: 2400, metric: "visible_chars_v1" },
+      "25": { actual: 2100, metric: "visible_chars_v1" },
+    },
+    total_words: 4500,
+  };
+  const { nextState, totalWords } = applyWordCountToTrackingState(mockState, 25, 2800);
+  assert.equal((nextState.wordcount_records["25"]).actual, 2800);
+  assert.equal(totalWords, 5200);
+
+  // 4. 版本指纹与防并发互盖漂移检测
+  const baseline = "江晨放下了耳机。";
+  const fp = computeContentFingerprint(baseline);
+  assert.equal(isFingerprintDrifted(baseline, fp), false);
+  assert.equal(isFingerprintDrifted("江晨放下了耳机并关上灯。", fp), true);
+});
+
+test("M27: story-gates getCore resolves story_hook_core from both extension mount locations in external workspace", () => {
+  const testCandidates = (extDir, root) => {
+    const home = process.env.USERPROFILE || process.env.HOME || "";
+    const candidates = [
+      path.resolve(extDir, "../../templates/hooks/story_hook_core.js"),
+      path.resolve(extDir, "../templates/hooks/story_hook_core.js"),
+      path.resolve(extDir, "../../skills/story-setup/references/templates/hooks/story_hook_core.js"),
+      path.resolve(extDir, "../skills/story-setup/references/templates/hooks/story_hook_core.js"),
+      path.resolve(extDir, "../../.agents/hooks/story_hook_core.js"),
+      path.resolve(extDir, "../../../../.agents/hooks/story_hook_core.js"),
+      path.resolve(process.cwd(), "skills/story-setup/references/templates/hooks/story_hook_core.js"),
+      path.resolve(process.cwd(), ".agents/hooks/story_hook_core.js"),
+      root ? path.join(root, "skills/story-setup/references/templates/hooks/story_hook_core.js") : null,
+      root ? path.join(root, ".agents/hooks/story_hook_core.js") : null,
+      path.join(home, ".pi/agent/skills/story-setup/references/templates/hooks/story_hook_core.js"),
+      path.join(home, ".agents/skills/story-setup/references/templates/hooks/story_hook_core.js"),
+      path.join(home, ".agents/hooks/story_hook_core.js"),
+    ];
+    return candidates.find((c) => c && fs.existsSync(c)) || null;
+  };
+
+  const externalRoot = "G:\\Books";
+  const fromReferences = testCandidates(path.resolve("skills/story-setup/references/pi/extensions"), externalRoot);
+  const fromDotPi = testCandidates(path.resolve(".pi/extensions"), externalRoot);
+
+  assert.ok(fromReferences && fs.existsSync(fromReferences), "Must resolve core from references/pi/extensions");
+  assert.ok(fromDotPi && fs.existsSync(fromDotPi), "Must resolve core from .pi/extensions");
 });

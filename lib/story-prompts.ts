@@ -133,21 +133,23 @@ export function buildShortRevisionPrompt(
 /**
  * 文本去AI味清洗提示词（阅读器/文件查看器）
  */
-export function buildDeslopPrompt(text: string, label?: string): string {
+export function buildDeslopPrompt(bookTitleOrText: string, label?: string): string {
   if (label) {
-    return `/story-deslop 对当前${label}成稿正文运行二次三层去AI味清洗：过滤模式化口癖、机械排比与空洞说教。`;
+    const bookPrefix = bookTitleOrText ? `《${bookTitleOrText.replace(/^《|》$/g, "")}》` : "";
+    return `/story-deslop 对${bookPrefix}${label}成稿正文运行二次三层去AI味清洗：过滤模式化口癖、机械排比与空洞说教。`;
   }
-  return `/story-deslop 对以下正文段落（${text.length}字）执行三层去AI味清洗：\n"${text}"`;
+  return `/story-deslop 对以下正文段落（${bookTitleOrText.length}字）执行三层去AI味清洗：\n"${bookTitleOrText}"`;
 }
 
 /**
  * 对抗性审查核验提示词（阅读器/文件查看器）
  */
-export function buildReviewPrompt(text: string, label?: string): string {
+export function buildReviewPrompt(bookTitleOrText: string, label?: string): string {
   if (label) {
-    return `/story-review 对抗性审查${label}成稿：核验事实一致性（S1-S4）、角色人设OOC、伏笔闭环与时间线。`;
+    const bookPrefix = bookTitleOrText ? `《${bookTitleOrText.replace(/^《|》$/g, "")}》` : "";
+    return `/story-review 对抗性审查${bookPrefix}${label}成稿：核验事实一致性（S1-S4）、角色人设OOC、伏笔闭环与时间线。`;
   }
-  return `/story-review 对以下手改段落核验因果与伏笔一致性：\n"${text}"`;
+  return `/story-review 对以下手改段落核验因果与伏笔一致性：\n"${bookTitleOrText}"`;
 }
 
 /**

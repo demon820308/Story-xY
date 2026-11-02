@@ -54,6 +54,11 @@ export const ActiveBookCard = memo(function ActiveBookCard({ cwd }: ActiveBookCa
               <span className="text-[13px] font-bold text-[var(--text)] serif-text truncate">
                 {activeBook.title}
               </span>
+              {activeBook.type && !activeBook.isUninitialized && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[var(--bg-hover)] text-[var(--text-muted)] border border-[var(--border)] shrink-0">
+                  {activeBook.type}
+                </span>
+              )}
               <span className="text-[10px] text-[var(--text-muted)]">▾</span>
             </div>
             <div className="flex items-center gap-2 mt-0.5 text-[10px]">
@@ -115,7 +120,14 @@ export const ActiveBookCard = memo(function ActiveBookCard({ cwd }: ActiveBookCa
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold serif-text truncate">{b.title}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold serif-text truncate">{b.title}</span>
+                          {b.type && !b.isUninitialized && (
+                            <span className={`px-1 py-0.2 rounded text-[8px] font-medium border shrink-0 ${isSelected ? "border-white/30 text-white/90" : "border-[var(--border)] text-[var(--text-muted)] bg-[var(--bg)]"}`}>
+                              {b.type}
+                            </span>
+                          )}
+                        </div>
                         <div
                           className={`text-[10px] truncate ${
                             isSelected ? "opacity-90" : "text-[var(--text-muted)]"

@@ -64,7 +64,7 @@ python scripts/skill-numbering.py check
 node scripts/run-doc-budget.js
 python scripts/check-agent-notes.py
 python scripts/generate-pi-agents.py --check
-node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs
+node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs test/story-ui-logic.test.mjs
 npx tsc --noEmit
 npm run lint
 npm run probe

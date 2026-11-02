@@ -86,8 +86,8 @@ python scripts/check-agent-notes.py
 # 5. Pi 智能子代理同步检查（确定性校验）
 python scripts/generate-pi-agents.py --check
 
-# 6. Story 核心单测（槽位解析器、写锁并发、短篇大纲计数）
-node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs
+# 6. Story 核心单测（槽位解析器、写锁并发、短篇大纲计数、UI逻辑）
+node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs test/story-ui-logic.test.mjs
 
 # 7. TypeScript 严格类型检查
 npx tsc --noEmit

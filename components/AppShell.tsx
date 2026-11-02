@@ -2781,6 +2781,11 @@ export function AppShell() {
             >
               <DocumentIcon size={13} />
               <span>文件查看器</span>
+              {fileTabs.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[var(--bg-hover)] text-[var(--text-muted)] border border-[var(--border)]">
+                  {fileTabs.length}
+                </span>
+              )}
             </button>
             <button
               type="button"

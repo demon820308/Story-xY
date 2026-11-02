@@ -4,6 +4,7 @@ import React, { memo, useState, useEffect, useMemo } from "react";
 import { useActiveBook, getBookRelPath } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import { isShortBook } from "@/lib/story-book-kind";
+import { extractChapterNumber } from "@/lib/story-chapter-parser";
 import {
   buildLongOutlinePrompt,
   buildLongWritePrompt,
@@ -22,14 +23,6 @@ interface StoryActionBarProps {
   onInsertPrompt: (prompt: string) => void;
   chapterIndex?: number;
   cwd?: string | null;
-}
-
-function extractChapterNumber(name: string): number | null {
-  const m1 = name.match(/第\s*0*(\d+)\s*[章节回]/);
-  if (m1) return parseInt(m1[1], 10);
-  const m2 = name.match(/细纲[_-]+0*(\d+)/);
-  if (m2) return parseInt(m2[1], 10);
-  return null;
 }
 
 export const StoryActionBar = memo(function StoryActionBar({
@@ -211,9 +204,9 @@ export const StoryActionBar = memo(function StoryActionBar({
     const handler = (e: Event) => {
       const custom = e as CustomEvent<{ filePath?: string; fileName?: string }>;
       const name = custom.detail?.fileName || "";
-      const match = name.match(/(?:第?(\d+)[章节]|(\d+)\.)/);
-      if (match) {
-        setSelectedChapter(parseInt(match[1] || match[2], 10));
+      const num = extractChapterNumber(name);
+      if (num !== null) {
+        setSelectedChapter(num);
       }
     };
     window.addEventListener("open-story-file", handler);
@@ -275,6 +268,11 @@ export const StoryActionBar = memo(function StoryActionBar({
   const isWritePrimary = isShort
     ? !isShortInitial && hasOutline && !hasProse
     : hasOutline && !hasProse;
+
+  // 零状态守卫：未初始化或未立项书籍时隐藏动作条
+  if (!activeBook || activeBook.isUninitialized) {
+    return null;
+  }
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto mb-2 text-xs select-none py-1">

@@ -6,26 +6,26 @@ import { encodeFilePathForApi } from "@/lib/file-paths";
 import { buildDeslopPrompt, buildReviewPrompt } from "@/lib/story-prompts";
 import {
   normalizeNovelContent,
+  stripLeadingIndents,
   findInSource,
   replaceMatchInSource,
   replaceAllInSource,
   FindMatch,
 } from "@/lib/story-reader-format";
+import { extractChapterInfo, type ChapterItem } from "@/lib/story-chapter-parser";
+import {
+  isCommittedChapter,
+  computeContentFingerprint,
+  isFingerprintDrifted,
+  createSnapshotBeforeSave,
+  syncTrackingWordCount,
+} from "@/lib/story-editor-governance";
 
 interface StoryReaderModalProps {
   isOpen: boolean;
   onClose: () => void;
   cwd?: string | null;
   initialChapterNum?: number;
-}
-
-export interface ChapterItem {
-  fileName: string;
-  fullPath: string;
-  title: string;
-  chapterNum: number;
-  rawNum: string;
-  wordCount?: number;
 }
 
 type ViewMode = "reader" | "source" | "split";
@@ -44,53 +44,6 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   fontSize: "base",
   lineHeight: "standard",
 };
-
-function extractChapterInfo(fileName: string, fullPath: string): ChapterItem | null {
-  const nameWithoutExt = fileName.replace(/\.(md|txt|markdown)$/i, "");
-
-  // 排除非正文成稿文件
-  if (/(细纲|大纲|逐章记录|摘要|时间线|设定|草稿|架构)/.test(nameWithoutExt)) {
-    return null;
-  }
-
-  // 短篇成稿
-  if (nameWithoutExt === "正文") {
-    return {
-      fileName,
-      fullPath,
-      title: "短篇正文成稿",
-      chapterNum: 1,
-      rawNum: "全篇",
-    };
-  }
-
-  // 匹配第几章格式，如：第001章、第1章、第25章_别做成晚会、第1节 等
-  const match = nameWithoutExt.match(/^第\s*(\d+|[一二三四五六七八九十百千万]+)\s*([章节回集])(.*)$/);
-  if (match) {
-    const rawNum = match[1];
-    const unit = match[2];
-    const titlePart = match[3]?.replace(/^[_\s-]+/, "") || "";
-    const num = /^\d+$/.test(rawNum) ? parseInt(rawNum, 10) : 1;
-    const formattedNum = /^\d+$/.test(rawNum) ? String(num).padStart(3, "0") : rawNum;
-    const label = `第${formattedNum}${unit}`;
-
-    return {
-      fileName,
-      fullPath,
-      title: titlePart || label,
-      chapterNum: num,
-      rawNum: label,
-    };
-  }
-
-  return {
-    fileName,
-    fullPath,
-    title: nameWithoutExt,
-    chapterNum: 9999,
-    rawNum: nameWithoutExt,
-  };
-}
 
 async function fetchFullText(fullPath: string): Promise<string> {
   let full = "";
@@ -169,6 +122,14 @@ export const StoryReaderModal = memo(function StoryReaderModal({
   // 各章节已统计字数缓存
   const [chapterWordsMap, setChapterWordsMap] = useState<Record<string, number>>({});
 
+  // 编辑治理与快照状态 (M23, M24)
+  const [snapshotNotice, setSnapshotNotice] = useState<string | null>(null);
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+  const initialContentRef = useRef<string>("");
+  const baselineFingerprintRef = useRef<string>("");
+  const snapshotCreatedRef = useRef<boolean>(false);
+  const lastCommittedChapterRef = useRef<number>(0);
+
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const contentRef = useRef(content);
   contentRef.current = content;
@@ -201,6 +162,20 @@ export const StoryReaderModal = memo(function StoryReaderModal({
 
     const basePath = activeBook.path.replace(/\\/g, "/").replace(/\/+$/, "");
     const zhengwenDir = `${basePath}/正文`;
+
+    // 探测定稿章界线 (M23)
+    const trackingPath = `${basePath}/追踪/_tracking-state.json`;
+    fetch(`/api/files/${encodeFilePathForApi(trackingPath)}?type=read`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.content) {
+          try {
+            const state = JSON.parse(d.content);
+            lastCommittedChapterRef.current = Number(state.last_committed_chapter) || 0;
+          } catch {}
+        }
+      })
+      .catch(() => {});
 
     Promise.all([
       fetch(`/api/files/${encodeFilePathForApi(zhengwenDir)}?type=list`)
@@ -266,6 +241,11 @@ export const StoryReaderModal = memo(function StoryReaderModal({
       .then((rawText) => {
         if (!isCancelled) {
           setContent(rawText);
+          initialContentRef.current = rawText;
+          baselineFingerprintRef.current = computeContentFingerprint(rawText);
+          snapshotCreatedRef.current = false;
+          setSnapshotNotice(null);
+          setConflictWarning(null);
           setSaveStatus("saved");
           const cleanedCount = rawText.replace(/\s+/g, "").length;
           setChapterWordsMap((prev) => ({ ...prev, [currentChapter.fullPath]: cleanedCount }));
@@ -286,12 +266,50 @@ export const StoryReaderModal = memo(function StoryReaderModal({
     };
   }, [isOpen, currentChapter]);
 
-  // 3. 执行文件静默落盘保存
+  // 3. 执行文件静默落盘保存与编辑治理 (M23, M24)
   const saveContentImmediately = useCallback(
     async (textToSave: string, targetPath?: string) => {
       const path = targetPath || currentChapter?.fullPath;
       if (!path) return;
       setSaveStatus("saving");
+
+      const chapNum = currentChapter?.chapterNum ?? 0;
+      const isCommitted = isCommittedChapter(chapNum, lastCommittedChapterRef.current);
+
+      // A. 定稿保护：覆写已提交章节（<= last_committed_chapter）前强制写入快照
+      if (
+        isCommitted &&
+        !snapshotCreatedRef.current &&
+        initialContentRef.current &&
+        textToSave !== initialContentRef.current &&
+        activeBook?.path
+      ) {
+        const snapRel = await createSnapshotBeforeSave(
+          activeBook.path,
+          chapNum,
+          currentChapter?.rawNum || `第${chapNum}章`,
+          initialContentRef.current
+        );
+        if (snapRel) {
+          snapshotCreatedRef.current = true;
+          setSnapshotNotice(`已定稿章节：已自动备份原稿至 ${snapRel}`);
+        }
+      }
+
+      // B. 版本指纹：防与后台 agent 并发互盖
+      if (baselineFingerprintRef.current) {
+        try {
+          const curDiskText = await fetchFullText(path);
+          if (
+            curDiskText &&
+            isFingerprintDrifted(curDiskText, baselineFingerprintRef.current) &&
+            curDiskText !== textToSave
+          ) {
+            setConflictWarning("检测到磁盘正文已被外部Agent或进程更新，请确认后保存");
+          }
+        } catch {}
+      }
+
       try {
         const res = await fetch(`/api/files/${encodeFilePathForApi(path)}?type=write`, {
           method: "POST",
@@ -300,8 +318,15 @@ export const StoryReaderModal = memo(function StoryReaderModal({
         });
         if (res.ok) {
           setSaveStatus("saved");
+          baselineFingerprintRef.current = computeContentFingerprint(textToSave);
           const cleanedCount = textToSave.replace(/\s+/g, "").length;
           setChapterWordsMap((prev) => ({ ...prev, [path]: cleanedCount }));
+
+          // C. 保存成功后原子回写 tracking wordcount_records 与书目总字数
+          if (activeBook?.path && chapNum > 0) {
+            void syncTrackingWordCount(activeBook.path, chapNum, cleanedCount);
+          }
+
           if (typeof window !== "undefined") {
             window.dispatchEvent(new CustomEvent("story-refresh"));
           }
@@ -312,7 +337,7 @@ export const StoryReaderModal = memo(function StoryReaderModal({
         setSaveStatus("unsaved");
       }
     },
-    [currentChapter]
+    [currentChapter, activeBook]
   );
 
   // 4. 输入时防抖自动保存 (1000ms)
@@ -359,6 +384,18 @@ export const StoryReaderModal = memo(function StoryReaderModal({
       currentChapterButtonRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [selectedIndex, chapters.length]);
+
+  // 7.5 拦截关闭标签页未保存变更 (M24)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (saveStatus === "unsaved") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [saveStatus]);
 
   // 8. 键盘快捷键监听 (Esc, ←, →, Ctrl+S, Ctrl+F)
   useEffect(() => {
@@ -496,7 +533,8 @@ export const StoryReaderModal = memo(function StoryReaderModal({
       await saveContentImmediately(content);
     }
     const label = currentChapter.rawNum || "当前章";
-    const prompt = buildDeslopPrompt("", label);
+    const bookTitle = activeBook?.fullTitle || activeBook?.title || "";
+    const prompt = buildDeslopPrompt(bookTitle, label);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("insert-story-prompt", { detail: { prompt } }));
     }
@@ -513,7 +551,8 @@ export const StoryReaderModal = memo(function StoryReaderModal({
       await saveContentImmediately(content);
     }
     const label = currentChapter.rawNum || "当前章";
-    const prompt = buildReviewPrompt("", label);
+    const bookTitle = activeBook?.fullTitle || activeBook?.title || "";
+    const prompt = buildReviewPrompt(bookTitle, label);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("insert-story-prompt", { detail: { prompt } }));
     }
@@ -943,6 +982,40 @@ export const StoryReaderModal = memo(function StoryReaderModal({
           </div>
         </div>
 
+        {/* 快照通知明示与冲突告警 (M23, M24) */}
+        {snapshotNotice && (
+          <div className="px-3 md:px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 flex items-center justify-between animate-fade-in shrink-0">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span>📸</span>
+              <span>{snapshotNotice}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setSnapshotNotice(null)}
+              className="text-[11px] opacity-70 hover:opacity-100 cursor-pointer ml-2"
+              title="关闭通知"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        {conflictWarning && (
+          <div className="px-3 md:px-4 py-1.5 bg-red-500/10 border-b border-red-500/20 text-xs text-red-600 dark:text-red-400 flex items-center justify-between animate-fade-in shrink-0">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span>⚠️</span>
+              <span>{conflictWarning}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setConflictWarning(null)}
+              className="text-[11px] opacity-70 hover:opacity-100 cursor-pointer ml-2"
+              title="关闭警告"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* ============================================================== */}
         {/* 查找替换悬浮条 (M32) */}
         {/* ============================================================== */}
@@ -1164,7 +1237,7 @@ export const StoryReaderModal = memo(function StoryReaderModal({
                       }
                       return (
                         <p key={pIdx} className="story-p">
-                          {p.text}
+                          {stripLeadingIndents(p.text)}
                         </p>
                       );
                     })}
@@ -1304,7 +1377,7 @@ export const StoryReaderModal = memo(function StoryReaderModal({
                       }
                       return (
                         <p key={pIdx} className="story-p">
-                          {p.text}
+                          {stripLeadingIndents(p.text)}
                         </p>
                       );
                     })}

@@ -39,7 +39,7 @@ jobs:
       - name: Pi agents synchronization check
         run: python scripts/generate-pi-agents.py --check
       - name: Story unit tests
-        run: node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs
+        run: node --test test/story-agent-resolver.test.mjs test/story-agents-lock.test.mjs test/story-short-outline.test.mjs test/story-ui-logic.test.mjs
       - name: TypeScript typecheck
         run: npx tsc --noEmit
       - name: ESLint

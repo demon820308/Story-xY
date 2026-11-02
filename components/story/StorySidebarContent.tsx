@@ -4,6 +4,7 @@ import React, { memo, useState, useEffect } from "react";
 import { useActiveBook, getBookRelPath } from "./useActiveBook";
 import { encodeFilePathForApi } from "@/lib/file-paths";
 import { isShortBook } from "@/lib/story-book-kind";
+import { extractChapterInfo, type ChapterItem } from "@/lib/story-chapter-parser";
 import {
   buildWorkspaceInitPrompt,
   buildShortOutlinePrompt,
@@ -20,13 +21,6 @@ interface StorySidebarContentProps {
     options?: { sourceSessionId?: string | null; modeHint?: "diff" }
   ) => void;
   children?: React.ReactNode;
-}
-
-interface ChapterItem {
-  fileName: string;
-  fullPath: string;
-  title: string;
-  chapterNum: string;
 }
 
 interface OutlineItem {
@@ -64,7 +58,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
     return () => window.removeEventListener("story-refresh", handleStoryRefresh);
   }, []);
 
-  // 探测当前工作区是否已建立长篇/短篇目录结构或已有书籍
+  // 探测当前工作区是否已部署写作环境、建立目录结构或已有书籍
   useEffect(() => {
     if (!cwd) {
       setHasSetup(false);
@@ -76,12 +70,13 @@ export const StorySidebarContent = memo(function StorySidebarContent({
     }
     const normCwd = cwd.replace(/\\/g, "/").replace(/\/+$/, "");
     Promise.all([
-      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/长篇")}?type=meta`),
-      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/短篇")}?type=meta`),
+      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/.story-deployed")}?type=meta`),
+      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/长篇")}?type=list`),
+      fetch(`/api/files/${encodeFilePathForApi(normCwd + "/短篇")}?type=list`),
     ])
-      .then(([r1, r2]) => setHasSetup(r1.ok || r2.ok))
+      .then(([rDeployed, rLp, rDp]) => setHasSetup(rDeployed.ok || rLp.ok || rDp.ok))
       .catch(() => setHasSetup(false));
-  }, [cwd, books]);
+  }, [cwd, books, refreshTrigger]);
 
   // 动态扫描当前书目下的正文章节与各章细纲
   useEffect(() => {
@@ -98,14 +93,14 @@ export const StorySidebarContent = memo(function StorySidebarContent({
     const isSingleFileShort = basePath.endsWith(".txt") || basePath.endsWith(".md");
 
     if (isSingleFileShort) {
-      setChapters([
-        {
-          fileName: activeBook.fullTitle,
-          fullPath: basePath,
-          title: "正文成稿",
-          chapterNum: "全篇",
-        },
-      ]);
+      const singleItem = extractChapterInfo(activeBook.fullTitle, basePath) || {
+        fileName: activeBook.fullTitle,
+        fullPath: basePath,
+        title: "正文成稿",
+        chapterNum: 1,
+        rawNum: "全篇",
+      };
+      setChapters([singleItem]);
       setOutlines([]);
       setLoading(false);
       return;
@@ -134,31 +129,16 @@ export const StorySidebarContent = memo(function StorySidebarContent({
       let parsedChapters: ChapterItem[] = [];
       if (zhengwenRes && Array.isArray(zhengwenRes.entries)) {
         parsedChapters = zhengwenRes.entries
-          .filter((e: { name?: string }) => e.name && e.name.endsWith(".md"))
-          .map((e: { name: string }) => {
-            const raw = e.name.replace(/\.md$/, "");
-            const parts = raw.split("_");
-            const chapterNum = parts[0] || raw;
-            const title = parts.slice(1).join(" ") || raw;
-            return {
-              fileName: e.name,
-              fullPath: `${zhengwenDir}/${e.name}`,
-              title,
-              chapterNum,
-            };
-          })
-          .sort((a: ChapterItem, b: ChapterItem) => a.fileName.localeCompare(b.fileName, undefined, { numeric: true }));
+          .map((e: { name: string }) => extractChapterInfo(e.name, `${zhengwenDir}/${e.name}`))
+          .filter((item: ChapterItem | null): item is ChapterItem => item !== null)
+          .sort((a: ChapterItem, b: ChapterItem) => a.chapterNum - b.chapterNum);
       } else if (rootRes && Array.isArray(rootRes.entries)) {
         const rootZw = rootRes.entries.find((e: { name?: string }) => e.name === "正文.md");
         if (rootZw) {
-          parsedChapters = [
-            {
-              fileName: "正文.md",
-              fullPath: `${basePath}/正文.md`,
-              title: "成稿正文",
-              chapterNum: "全篇",
-            },
-          ];
+          const item = extractChapterInfo("正文.md", `${basePath}/正文.md`);
+          if (item) {
+            parsedChapters = [item];
+          }
         }
       }
       setChapters(parsedChapters);
@@ -479,7 +459,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                           <div className="min-w-0 pr-1">
                             <div className="font-bold text-[11px] serif-text truncate text-[var(--accent)] flex items-center gap-1">
                               <span>✍️</span>
-                              <span>{latest.chapterNum} {latest.title}</span>
+                              <span>{latest.rawNum} {latest.title}</span>
                             </div>
                             <div className="text-[10px] text-[var(--text-muted)] truncate">
                               最新章节 · 点击在画板打开
@@ -501,7 +481,7 @@ export const StorySidebarContent = memo(function StorySidebarContent({
                       >
                         <div className="min-w-0 pr-1">
                           <div className="font-bold text-[11px] serif-text truncate">
-                            {ch.chapterNum} {ch.title}
+                            {ch.rawNum} {ch.title}
                           </div>
                         </div>
                         <span className="text-[9px] px-1 py-0.5 rounded bg-[var(--bg-hover)] text-[var(--text-muted)] shrink-0 font-mono">

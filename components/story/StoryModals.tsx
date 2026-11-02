@@ -87,6 +87,7 @@ export function StoryModals({ cwd }: StoryModalsProps) {
     window.addEventListener("open-story-kanban", handleOpenKanban);
     window.addEventListener("open-bookshelf", handleOpenBookshelf);
     window.addEventListener("open-new-book", handleOpenNewBook);
+    window.addEventListener("open-story-new-book", handleOpenNewBook);
     window.addEventListener("open-import-book", handleOpenImportBook);
 
     window.addEventListener("open-story-reader", handleOpenReader);
@@ -95,6 +96,7 @@ export function StoryModals({ cwd }: StoryModalsProps) {
       window.removeEventListener("open-story-kanban", handleOpenKanban);
       window.removeEventListener("open-bookshelf", handleOpenBookshelf);
       window.removeEventListener("open-new-book", handleOpenNewBook);
+      window.removeEventListener("open-story-new-book", handleOpenNewBook);
       window.removeEventListener("open-import-book", handleOpenImportBook);
 
       window.removeEventListener("open-story-reader", handleOpenReader);

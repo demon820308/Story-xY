@@ -1,19 +1,60 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { encodeFilePathForApi } from "@/lib/file-paths";
 
 interface StorySetupCardProps {
   workspacePath?: string;
   onRunSetup?: () => void;
+  isInitialized?: boolean;
 }
 
 export function StorySetupCard({
   workspacePath = "当前工作区",
   onRunSetup,
+  isInitialized: initialIsInitialized,
 }: StorySetupCardProps) {
+  const [initialized, setInitialized] = useState<boolean>(initialIsInitialized ?? false);
+
+  // 探测当前工作区是否已完成环境初始化部署
+  useEffect(() => {
+    if (initialIsInitialized !== undefined) {
+      setInitialized(initialIsInitialized);
+      return;
+    }
+    if (!workspacePath || workspacePath === "当前工作区") {
+      setInitialized(false);
+      return;
+    }
+    let cancelled = false;
+    const norm = workspacePath.replace(/\\/g, "/").replace(/\/+$/, "");
+    Promise.all([
+      fetch(`/api/files/${encodeFilePathForApi(norm + "/.story-deployed")}?type=meta`),
+      fetch(`/api/files/${encodeFilePathForApi(norm + "/长篇")}?type=list`),
+      fetch(`/api/files/${encodeFilePathForApi(norm + "/短篇")}?type=list`),
+      fetch(`/api/files/${encodeFilePathForApi(norm + "/AGENTS.md")}?type=meta`),
+      fetch(`/api/files/${encodeFilePathForApi(norm + "/.pi")}?type=list`),
+      fetch(`/api/files/${encodeFilePathForApi(norm + "/.agents")}?type=list`),
+    ])
+      .then((responses) => {
+        if (!cancelled) {
+          setInitialized(responses.some((r) => r.ok));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setInitialized(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspacePath, initialIsInitialized]);
+
   // 一键直接立项新书
   const handleOpenNewBook = () => {
     if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("open-new-book"));
       window.dispatchEvent(new CustomEvent("open-story-new-book"));
     }
   };
@@ -64,14 +105,24 @@ export function StorySetupCard({
             <span>✍️</span>
             <span>立即立项第一本小说 (长篇 / 短篇)</span>
           </button>
-          {onRunSetup && (
+          {initialized ? (
             <button
-              onClick={onRunSetup}
-              className="w-full py-2 rounded-xl bg-[var(--bg)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              disabled
+              className="w-full py-2 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)] opacity-60 font-medium text-xs flex items-center justify-center gap-2 cursor-not-allowed select-none"
             >
               <span>⚙️</span>
-              <span>运行工程目录环境初始化 (/story-setup)</span>
+              <span>本工作区已初始化</span>
             </button>
+          ) : (
+            onRunSetup && (
+              <button
+                onClick={onRunSetup}
+                className="w-full py-2 rounded-xl bg-[var(--bg)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] font-medium text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <span>⚙️</span>
+                <span>运行工程目录环境初始化 (/story-setup)</span>
+              </button>
+            )
           )}
         </div>
       </div>
